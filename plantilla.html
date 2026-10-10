@@ -1,0 +1,648 @@
+<title>Mapa interactivo de IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Recursive:wght,MONO@300..1000,0..1&display=swap">
+<style>
+/* Layout: el mapa es un grafo de nodos y cables (como un editor de nodos de ML) sobre una retícula de puntos;
+   la ficha del concepto vive fija a la derecha y, en móvil, en una hoja inferior. Áreas coloreadas con viridis. */
+:root {
+  --bg: #eef1f0;        /* lienzo: gris frío con sesgo hacia el teal del acento */
+  --surface: #fbfcfc;   /* nodos, barra y panel */
+  --ink: #13201e;       /* texto principal */
+  --muted: #5a6a66;     /* texto secundario */
+  --line: #cfd8d5;      /* bordes */
+  --grid: #c2cdca;      /* puntos de la retícula */
+  --accent: #1d7c77;    /* selección e interacción (teal de viridis, oscurecido) */
+  --code-bg: #e9efed;
+  --shadow: rgba(19, 32, 30, .16);
+  --tip-bg: #16302c;    /* tarjeta flotante "en una frase": invertida respecto al lienzo */
+  --tip-fg: #eef5f3;
+  --font-ui: "Recursive", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Recursive", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* 18 áreas en orden del árbol, muestreadas de la escala viridis (tramo legible sobre fondo claro) */
+  --a0:#440154; --a1:#471365; --a2:#482475; --a3:#46337f; --a4:#414287; --a5:#3b518b;
+  --a6:#355e8d; --a7:#2f6b8e; --a8:#2a778e; --a9:#26828e; --a10:#218f8d; --a11:#1e9b8a;
+  --a12:#21a685; --a13:#2db27d; --a14:#40bd72; --a15:#58c765; --a16:#75d054; --a17:#95d840;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1312; --surface: #151d1c; --ink: #e2ebe9; --muted: #92a39f;
+    --line: #283331; --grid: #22302d; --accent: #49beb2; --code-bg: #1d2826; --shadow: rgba(0, 0, 0, .5);
+    --tip-bg: #e4efec; --tip-fg: #10201d;
+    --a0:#433e85; --a1:#3e4c8a; --a2:#38598c; --a3:#31668e; --a4:#2c718e; --a5:#287d8e;
+    --a6:#23898e; --a7:#1f948c; --a8:#1fa088; --a9:#25ac82; --a10:#34b679; --a11:#48c16e;
+    --a12:#63cb5f; --a13:#7fd34e; --a14:#9dd93b; --a15:#c0df25; --a16:#dfe318; --a17:#fde725;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1312; --surface: #151d1c; --ink: #e2ebe9; --muted: #92a39f;
+  --line: #283331; --grid: #22302d; --accent: #49beb2; --code-bg: #1d2826; --shadow: rgba(0, 0, 0, .5);
+  --tip-bg: #e4efec; --tip-fg: #10201d;
+  --a0:#433e85; --a1:#3e4c8a; --a2:#38598c; --a3:#31668e; --a4:#2c718e; --a5:#287d8e;
+  --a6:#23898e; --a7:#1f948c; --a8:#1fa088; --a9:#25ac82; --a10:#34b679; --a11:#48c16e;
+  --a12:#63cb5f; --a13:#7fd34e; --a14:#9dd93b; --a15:#c0df25; --a16:#dfe318; --a17:#fde725;
+  color-scheme: dark;
+}
+
+html { box-sizing: border-box; height: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font: 400 14px/1.45 var(--font-ui); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+
+/* ---------- Barra superior ---------- */
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 12px 20px;
+       background: var(--surface); border-bottom: 1px solid var(--line); position: relative; z-index: 5; }
+.brand h1 { margin: 0; font: 850 22px/1.05 var(--font-ui); letter-spacing: -0.02em; }
+.meta { margin: 4px 0 0; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.pill { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); }
+.search { position: relative; flex: 1 1 260px; max-width: 440px; }
+.search input { width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px;
+                background: var(--bg); color: var(--ink); font: 450 14px/1.2 var(--font-ui); }
+.search input::placeholder { color: var(--muted); }
+#resultados { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30; margin: 0; padding: 4px;
+              list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 9px;
+              box-shadow: 0 12px 32px var(--shadow); max-height: min(60vh, 440px); overflow: auto; }
+#resultados button { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 2px;
+                     align-items: baseline; width: 100%; padding: 8px 10px; border: 0;
+                     border-radius: 6px; background: none; text-align: left; cursor: pointer; }
+#resultados button[aria-selected="true"], #resultados button:hover { background: var(--bg); }
+#resultados .dot { align-self: center; }
+.r-name { min-width: 0; font-weight: 560; }
+.r-area { color: var(--muted); font-size: 12px; text-align: right; max-width: 14em; }
+.r-frase { grid-column: 2 / 4; color: var(--muted); font-size: 12.5px; line-height: 1.35;
+           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#resultados .vacio { padding: 10px; color: var(--muted); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
+.btn { padding: 8px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface);
+       font-size: 13px; line-height: 1; cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: .45; cursor: default; }
+.zoom { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+.zoom button { width: 32px; height: 31px; border: 0; background: none; font-size: 16px; cursor: pointer; }
+#z-nivel { min-width: 48px; text-align: center; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- Escenario: mapa + ficha ---------- */
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) clamp(330px, 31vw, 440px); min-height: 0; }
+.viewport { overflow: auto; min-height: 0; overscroll-behavior: contain;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 1px 1px, var(--grid) 1.1px, transparent 1.5px);
+            background-size: 22px 22px; background-attachment: local; }
+.sizer { position: relative; }
+.canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#wires { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.w { fill: none; stroke-width: 1.4; opacity: .4; }
+.w.on { opacity: 1; stroke-width: 2.6; }
+.w.draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .4s ease-out forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* Nodos: caja con puerto de entrada (izquierda) y de salida (derecha, solo si tiene hijos) */
+.node { position: absolute; left: 0; top: 0; width: 216px; display: flex; align-items: center; gap: 8px;
+        padding: 8px 14px 8px 13px; border: 1px solid var(--line); border-radius: 7px;
+        background: var(--surface); font: 430 13.5px/1.3 var(--font-ui); text-align: left; cursor: pointer; }
+.node:hover { border-color: var(--muted); }
+.node .label { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.node .nw { white-space: nowrap; }
+.node .count { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.port { position: absolute; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%;
+        background: var(--c, var(--accent)); }
+.port.in { left: -5.5px; }
+.port.out { right: -5.5px; background: var(--surface); border: 2px solid var(--c, var(--accent)); }
+.node.open .port.out { background: var(--c, var(--accent)); }
+.node.d0 { width: 168px; padding: 14px 16px; border-color: var(--ink); font: 850 17px/1.15 var(--font-ui); letter-spacing: -0.01em; }
+.node.d0 .port.in { display: none; }
+.node.d1 { font-weight: 640; font-size: 14.5px; }
+.node.pending .label { color: var(--muted); }
+.node.pending { border-style: dashed; }
+.node.path { border-color: var(--c, var(--accent)); }
+.node.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent);
+            background: color-mix(in oklab, var(--accent) 9%, var(--surface)); }
+.node.sel .label { color: var(--ink); }
+.node.enter { animation: entra .3s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 14ms); }
+@keyframes entra { from { opacity: 0; translate: -14px 0; } to { opacity: 1; translate: 0 0; } }
+
+/* "En una frase": tarjeta flotante al pasar el ratón (o enfocar con teclado). No captura el ratón. */
+.tip { position: fixed; z-index: 40; max-width: 300px; padding: 10px 13px 11px; border-radius: 9px;
+       background: var(--tip-bg); color: var(--tip-fg); box-shadow: 0 10px 28px var(--shadow);
+       font-size: 13.5px; line-height: 1.42; pointer-events: none;
+       opacity: 0; translate: 0 -3px; transition: opacity .14s ease, translate .14s ease; }
+.tip.down { translate: 0 3px; }
+.tip.on { opacity: 1; translate: 0 0; }
+.tip p { margin: 0; display: flex; gap: 9px; align-items: baseline; }
+.tip .dot { position: relative; top: -1px; }
+.tip::before { content: ""; position: absolute; left: var(--ax, 24px); width: 10px; height: 10px; margin-left: -5px;
+               background: var(--tip-bg); transform: rotate(45deg); }
+.tip:not(.down)::before { top: -4px; }
+.tip.down::before { bottom: -4px; }
+
+/* ---------- Ficha ---------- */
+.panel { position: relative; min-height: 0; overflow: auto; background: var(--surface); border-left: 1px solid var(--line); }
+.handle { display: none; }
+#ficha { padding: 22px 26px 30px; max-width: 64ch; }
+.crumbs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; font-size: 12.5px; color: var(--muted); }
+.crumbs button { padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; text-align: left; }
+.crumbs button:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+#ficha h2 { margin: 10px 0 0; font: 800 27px/1.1 var(--font-ui); letter-spacing: -0.02em; text-wrap: balance; }
+.area-tag { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+.en { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; }
+.lead { margin: 14px 0 0; font-size: 17px; font-weight: 520; line-height: 1.42; text-wrap: pretty; }
+.desc { margin: 12px 0 0; font-size: 15px; line-height: 1.6; }
+.blk { margin-top: 22px; }
+.blk h3 { margin: 0 0 8px; font: 650 13px/1.2 var(--font-ui); color: var(--muted); }
+.blk > p { margin: 0; font-size: 14.5px; line-height: 1.55; }
+.cuando { padding: 12px 14px 13px; border-radius: 9px; background: color-mix(in oklab, var(--accent) 9%, var(--surface)); }
+.cuando h3 { color: var(--accent); }
+.hp { display: grid; grid-template-columns: minmax(0, max-content) minmax(0, 1fr); gap: 7px 14px; margin: 0; font-size: 14px; line-height: 1.45; }
+.hp dt { min-width: 0; }
+.hp dt code { display: inline-block; padding: 2px 6px; border-radius: 5px; background: var(--code-bg); font-size: 12.5px; overflow-wrap: anywhere; }
+.hp dd { margin: 0; min-width: 0; color: var(--ink); }
+.pending-note { margin: 16px 0 0; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); }
+code { font-family: var(--font-mono); font-variation-settings: "MONO" 1; font-size: .92em; }
+.desc code, .ej code { padding: 1px 5px; border-radius: 4px; background: var(--code-bg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px 5px 9px; border: 1px solid var(--line);
+        border-radius: 999px; background: var(--bg); font-size: 12.5px; line-height: 1.25; text-align: left; cursor: pointer; }
+.chip:hover { border-color: var(--c, var(--muted)); }
+.dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--c, var(--accent)); }
+.py { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.py li { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 5px 5px 11px; border-radius: 7px; background: var(--code-bg); }
+.py code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 12.5px; padding-block: 3px; }
+.copy, .docs { flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--line);
+               border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 12px; line-height: 1.2;
+               text-decoration: none; cursor: pointer; }
+.copy:hover, .docs:hover { border-color: var(--muted); }
+.docs svg { width: 11px; height: 11px; }
+.seq { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--line); }
+.seq .pos { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.foot { margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.foot kbd { font-family: var(--font-mono); font-variation-settings: "MONO" 1; padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; }
+
+/* ---------- Móvil: la ficha pasa a una hoja inferior (asomada / abierta) ---------- */
+@media (max-width: 860px) {
+  .bar { padding: 10px 16px; gap: 10px 12px; }
+  .brand { flex: 1 1 auto; min-width: 0; }
+  .brand h1 { font-size: 19px; }
+  .tools { flex: none; align-self: flex-start; }
+  .search { order: 3; flex-basis: 100%; max-width: none; }
+  .btn-rama, .zoom { display: none; }
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  /* Hoja inferior en dos tiempos: asomada (nombre + frase) y abierta (ficha completa) */
+  .sizer { margin-bottom: calc(var(--peek, 84px) + 16px); }
+  .panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; max-height: 78%;
+           border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+           box-shadow: 0 -10px 30px var(--shadow); padding-bottom: env(safe-area-inset-bottom, 0px);
+           transform: translateY(calc(100% - var(--peek, 84px) - env(safe-area-inset-bottom, 0px))); transition: transform .3s ease; }
+  .panel[data-state="open"] { transform: none; }
+  .handle { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; width: 100%;
+            padding: 16px 18px 12px; border: 0; border-bottom: 1px solid var(--line); background: var(--surface); text-align: left; cursor: pointer; }
+  .handle::before { content: ""; position: absolute; top: 6px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line); }
+  .peek-text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+  #peek-title { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #peek-frase { color: var(--muted); font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #peek-accion { flex: none; color: var(--accent); font-size: 13px; font-weight: 600; }
+  .panel[data-state="open"] #peek-frase { display: none; }
+  .tip { display: none; }
+  #ficha { padding: 16px 18px 26px; }
+  #ficha h2 { font-size: 23px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <h1>Mapa interactivo de IA</h1>
+      <p class="meta"><span>Conceptos, herramientas y guía de uso</span><span class="pill" id="m-estado" hidden></span></p>
+    </div>
+    <div class="search" role="search">
+      <label for="q" class="sr">Buscar un concepto</label>
+      <input id="q" type="search" placeholder="Buscar un concepto" autocomplete="off" spellcheck="false"
+             role="combobox" aria-expanded="false" aria-controls="resultados" aria-autocomplete="list">
+      <ul id="resultados" role="listbox" hidden></ul>
+    </div>
+    <div class="tools">
+      <button class="btn" id="b-general" type="button">Vista general</button>
+      <button class="btn btn-rama" id="b-rama" type="button">Expandir rama</button>
+      <div class="zoom" role="group" aria-label="Zoom del mapa">
+        <button id="z-menos" type="button" aria-label="Alejar">−</button>
+        <span id="z-nivel" aria-live="polite">100 %</span>
+        <button id="z-mas" type="button" aria-label="Acercar">+</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="viewport" id="viewport" aria-label="Mapa de conceptos">
+      <div class="sizer" id="sizer">
+        <div class="canvas" id="canvas">
+          <svg id="wires" aria-hidden="true"></svg>
+          <div id="nodes"></div>
+        </div>
+      </div>
+    </div>
+    <aside class="panel" id="panel" data-state="peek" aria-labelledby="ficha-titulo">
+      <button class="handle" id="handle" type="button" aria-controls="ficha" aria-expanded="false">
+        <span class="peek-text"><span id="peek-title"></span><span id="peek-frase"></span></span><span id="peek-accion">Ver ficha</span>
+      </button>
+      <article id="ficha"></article>
+    </aside>
+  </main>
+</div>
+<div class="tip" id="tip" role="tooltip" hidden><p><span class="dot"></span><span id="tip-text"></span></p></div>
+
+<script type="application/json" id="datos">/*__DATOS__*/</script>
+<script>
+(() => {
+  "use strict";
+  const DATA = JSON.parse(document.getElementById("datos").textContent);
+  const $ = (s) => document.querySelector(s);
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isMobile = () => matchMedia("(max-width: 860px)").matches;
+  const DEFAULT_ID = "aprendizaje-supervisado";   // vista inicial sin enlace directo
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---------- Índice del árbol ----------
+  const areas = DATA.children || [];
+  const byId = new Map(), order = [];
+  (function index(n, parent, depth, area) {
+    n.parent = parent; n.depth = depth; n.area = depth === 1 ? n : area;
+    n.ai = n.area ? areas.indexOf(n.area) : -1;            // índice de área → color viridis
+    byId.set(n.id, n); order.push(n);
+    (n.children || []).forEach((c) => index(c, n, depth + 1, depth === 0 ? null : n.area));
+  })(DATA, null, 0, null);
+  const total = order.length - 1;                             // sin contar la raíz
+  const conFicha = order.filter((n) => n.depth > 0 && n.desc).length;
+  const color = (n) => (n.ai >= 0 ? `var(--a${n.ai})` : "var(--accent)");
+
+  $("#q").placeholder = `Buscar entre ${total} conceptos`;
+  if (conFicha < total) {
+    const p = $("#m-estado");
+    p.textContent = `Prototipo: ${conFicha} de ${total} fichas redactadas`;
+    p.hidden = false;
+  }
+
+  // ---------- Estado ----------
+  const expanded = new Set([DATA.id]);
+  let selected = DATA.id, pathSet = new Set([DATA.id]);
+  const ZOOMS = [0.55, 0.7, 0.85, 1, 1.15, 1.3];
+  let zi = 3;
+
+  // ---------- Nodos (se crean una vez; se muestran u ocultan) ----------
+  const viewport = $("#viewport"), sizer = $("#sizer"), canvas = $("#canvas");
+  const nodesEl = $("#nodes"), wiresEl = $("#wires");
+  const els = new Map(), heights = new Map();
+  order.forEach((n) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `node d${Math.min(n.depth, 2)}` + (n.depth > 0 && !n.desc ? " pending" : "");
+    b.style.setProperty("--c", color(n));
+    b.innerHTML = '<span class="port in"></span><span class="label"></span>' +
+      (n.children ? '<span class="count"></span><span class="port out"></span>' : "");
+    // Las palabras con guion (k-NN, t-SNE, multi-salida) no se parten a final de línea
+    b.querySelector(".label").innerHTML = esc(n.name).replace(/(\S+-\S+)/g, '<span class="nw">$1</span>');
+    b.setAttribute("aria-label", n.name);
+    b.hidden = true;
+    b.addEventListener("click", () => { hideTip(); onNodeClick(n.id); });
+    // "En una frase": al pasar el ratón (no en pantallas táctiles) o al llegar con el teclado
+    b.addEventListener("pointerenter", (e) => { if (e.pointerType !== "touch") scheduleTip(n, b); });
+    b.addEventListener("pointerleave", hideTip);
+    b.addEventListener("focus", () => { if (b.matches(":focus-visible")) scheduleTip(n, b, 0); });
+    b.addEventListener("blur", hideTip);
+    nodesEl.appendChild(b);
+    els.set(n.id, b);
+  });
+
+  // ---------- Layout: árbol horizontal con alturas variables ----------
+  const PAD = 32, GAP_X = 58, GAP_Y = 8, GAP_GROUP = 14, W_ROOT = 168, W_NODE = 216;
+  const nodeW = (n) => (n.depth === 0 ? W_ROOT : W_NODE);
+  const colX = (d) => PAD + (d === 0 ? 0 : W_ROOT + GAP_X + (d - 1) * (W_NODE + GAP_X));
+
+  function visibleList() {
+    const out = [];
+    (function walk(n) { out.push(n); if (expanded.has(n.id)) (n.children || []).forEach(walk); })(DATA);
+    return out;
+  }
+
+  function layout() {
+    let cursor = PAD;
+    (function place(n) {
+      n._x = colX(n.depth); n._w = nodeW(n); n._h = heights.get(n.id);
+      const kids = expanded.has(n.id) ? n.children || [] : [];
+      if (!kids.length) { n._y = cursor; cursor += n._h + GAP_Y; return; }
+      const start = cursor;
+      kids.forEach(place);
+      const first = kids[0], last = kids[kids.length - 1];
+      n._y = Math.max(start, (first._y + last._y + last._h) / 2 - n._h / 2);   // centrado sobre sus hijos
+      cursor = Math.max(cursor, n._y + n._h + GAP_Y) + GAP_GROUP;
+    })(DATA);
+    return cursor;
+  }
+
+  function render(nuevos = new Set()) {
+    const list = visibleList();
+    const vis = new Set(list.map((n) => n.id));
+    order.forEach((n) => { const el = els.get(n.id); if (el.hidden === vis.has(n.id)) el.hidden = !vis.has(n.id); });
+    list.forEach((n) => { if (!heights.has(n.id)) heights.set(n.id, els.get(n.id).offsetHeight); });
+    const H = layout() + PAD;
+    let W = 0, k = 0;
+    list.forEach((n) => {
+      const el = els.get(n.id);
+      el.style.transform = `translate(${n._x}px, ${n._y}px)`;
+      W = Math.max(W, n._x + n._w + PAD);
+      const abierto = expanded.has(n.id) && !!n.children;
+      if (n.children) {
+        el.setAttribute("aria-expanded", String(abierto));
+        el.querySelector(".count").textContent = abierto ? "" : n.children.length;
+      }
+      el.classList.toggle("open", abierto);
+      el.classList.toggle("sel", n.id === selected);
+      el.classList.toggle("path", pathSet.has(n.id) && n.id !== selected);
+      if (n.id === selected) el.setAttribute("aria-current", "true"); else el.removeAttribute("aria-current");
+      if (nuevos.has(n.id) && !reduceMotion) {
+        el.classList.remove("enter"); void el.offsetWidth;
+        el.style.setProperty("--i", k++); el.classList.add("enter");
+      }
+    });
+    const z = ZOOMS[zi];
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    canvas.style.transform = `scale(${z})`;
+    sizer.style.width = W * z + "px"; sizer.style.height = H * z + "px";
+    drawWires(list, nuevos, W, H);
+  }
+
+  function drawWires(list, nuevos, W, H) {
+    wiresEl.setAttribute("width", W); wiresEl.setAttribute("height", H);
+    wiresEl.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    let s = "";
+    list.forEach((n) => {
+      const p = n.parent;
+      if (!p) return;
+      const x1 = p._x + p._w, y1 = p._y + p._h / 2, x2 = n._x, y2 = n._y + n._h / 2, dx = (x2 - x1) / 2;
+      const cls = "w" + (pathSet.has(n.id) ? " on" : "") + (nuevos.has(n.id) && !reduceMotion ? " draw" : "");
+      s += `<path class="${cls}" pathLength="1" style="stroke:${color(n)}" d="M${x1} ${y1}C${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}"/>`;
+    });
+    wiresEl.innerHTML = s;
+  }
+
+  // ---------- Navegación ----------
+  function setPath() {
+    pathSet = new Set();
+    for (let n = byId.get(selected); n; n = n.parent) pathSet.add(n.id);
+  }
+
+  function select(id, { expand = false, sheet = false, instant = false } = {}) {
+    const n = byId.get(id);
+    if (!n) return;
+    const nuevos = new Set();
+    for (let p = n.parent; p; p = p.parent) {
+      if (!expanded.has(p.id)) { expanded.add(p.id); (p.children || []).forEach((c) => nuevos.add(c.id)); }
+    }
+    if (expand && n.children && !expanded.has(id)) { expanded.add(id); n.children.forEach((c) => nuevos.add(c.id)); }
+    selected = id;
+    setPath();
+    render(nuevos);
+    renderCard(n);
+    reveal(n, instant);
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* sin historial disponible */ }
+    if (sheet && isMobile()) setSheet(sheet);              // en móvil: primero la frase ("peek"), luego la ficha
+  }
+
+  function onNodeClick(id) {
+    const n = byId.get(id);
+    if (n.children && n.depth > 0 && selected === id && expanded.has(id)) {   // segundo clic: plegar
+      (function fold(m) { expanded.delete(m.id); (m.children || []).forEach(fold); })(n);
+      render();
+      return;
+    }
+    select(id, { expand: true, sheet: "peek" });
+  }
+
+  // ---------- "En una frase": tarjeta flotante junto al nodo ----------
+  const tip = $("#tip"), tipText = $("#tip-text");
+  let tipTimer = 0, tipFor = null;
+  function scheduleTip(n, el, delay = 380) {
+    clearTimeout(tipTimer);
+    if (!n.frase || n.id === selected || isMobile()) return;   // la ficha abierta ya lo dice; en móvil va en la hoja
+    tipTimer = setTimeout(() => showTip(n, el), delay);
+  }
+  function showTip(n, el) {
+    tipText.textContent = n.frase;
+    tip.style.setProperty("--c", color(n));
+    tip.hidden = false;
+    tip.classList.remove("on");
+    const r = el.getBoundingClientRect(), v = viewport.getBoundingClientRect();
+    const w = Math.min(300, v.width - 24);
+    tip.style.maxWidth = w + "px";
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    // Debajo del nodo; si no cabe en el mapa, encima. Nunca tapa el propio nodo.
+    let top = r.bottom + 10, down = false;
+    if (top + th > v.bottom - 8 && r.top - th - 10 > v.top + 4) { top = r.top - th - 10; down = true; }
+    const left = Math.min(Math.max(r.left + 4, v.left + 8), v.right - tw - 8);
+    tip.style.top = top + "px"; tip.style.left = left + "px";
+    tip.style.setProperty("--ax", Math.min(Math.max(r.left + 22 - left, 16), tw - 16) + "px");   // flecha hacia el nodo
+    tip.classList.toggle("down", down);
+    el.setAttribute("aria-describedby", "tip");
+    tipFor = el;
+    requestAnimationFrame(() => tip.classList.add("on"));
+  }
+  function hideTip() {
+    clearTimeout(tipTimer);
+    if (tipFor) { tipFor.removeAttribute("aria-describedby"); tipFor = null; }
+    tip.classList.remove("on");
+    tip.hidden = true;
+  }
+  viewport.addEventListener("scroll", hideTip, { passive: true });
+
+  // Desplaza lo justo para que el nodo (y su columna de hijos, si está abierto) quede a la vista
+  function reveal(n, instant) {
+    const z = ZOOMS[zi], vw = viewport.clientWidth, vh = viewport.clientHeight;
+    const right = (n._x + n._w + (expanded.has(n.id) && n.children ? GAP_X + W_NODE : 0)) * z + 24;
+    let left = viewport.scrollLeft;
+    if (right > left + vw) left = right - vw;
+    if (n._x * z - 24 < left) left = n._x * z - 24;
+    const top = (n._y + n._h / 2) * z - vh / 2;
+    viewport.scrollTo({ left: Math.max(0, left), top: Math.max(0, top), behavior: instant || reduceMotion ? "auto" : "smooth" });
+  }
+
+  // ---------- Ficha ----------
+  const ficha = $("#ficha");
+  const fmt = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+  const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+  const chip = (id) => {
+    const m = byId.get(id);
+    const t = m.frase ? ` title="${esc(m.frase)}"` : "";
+    return `<button type="button" class="chip" data-go="${m.id}" style="--c:${color(m)}"${t}><span class="dot"></span>${esc(m.name)}</button>`;
+  };
+  const ICONO_EXT = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const pyItem = (p) => {
+    const docs = p.u ? `<a class="docs" href="${esc(p.u)}" target="_blank" rel="noopener noreferrer" aria-label="Documentación oficial de ${esc(p.c)} (se abre en una pestaña nueva)">Docs ${ICONO_EXT}</a>` : "";
+    return `<li><code>${esc(p.c)}</code>${docs}<button type="button" class="copy" data-copy="${esc(p.c)}">Copiar</button></li>`;
+  };
+
+  function renderCard(n) {
+    const ruta = [];
+    for (let p = n.parent; p && p.depth > 0; p = p.parent) ruta.unshift(p);
+    const h = [];
+    h.push('<nav class="crumbs" aria-label="Ruta">' + (n.depth === 0 ? "<span>Raíz del mapa</span>" :
+      ['<button type="button" data-go="' + DATA.id + '">IA</button>']
+        .concat(ruta.map((p) => `<button type="button" data-go="${p.id}">${esc(p.name)}</button>`))
+        .join('<span aria-hidden="true">›</span>')) + "</nav>");
+    h.push(`<h2 id="ficha-titulo">${esc(n.name)}</h2>`);
+    if (n.en && norm(n.en) !== norm(n.name)) h.push(`<p class="en" lang="en">${esc(n.en)}</p>`);
+    if (n.desc) {
+      // Orden de lectura: qué es (frase + explicación) → cuándo usarlo → ejemplo → cómo usarlo (hiperparámetros, Python)
+      if (n.frase) h.push(`<p class="lead">${fmt(n.frase)}</p>`);
+      h.push(`<p class="desc">${fmt(n.desc)}</p>`);
+      if (n.cuando) h.push(`<section class="blk cuando"><h3>Cuándo usarlo</h3><p>${fmt(n.cuando)}</p></section>`);
+      if (n.ej) h.push(`<section class="blk ej"><h3>Ejemplo</h3><p>${fmt(n.ej)}</p></section>`);
+      if (n.hp && n.hp.length) h.push(`<section class="blk"><h3>Hiperparámetros clave</h3><dl class="hp">${
+        n.hp.map(([k, v]) => `<dt>${k.split("/").map((s) => `<code>${esc(s.trim())}</code>`).join(" / ")}</dt><dd>${fmt(v)}</dd>`).join("")}</dl></section>`);
+    } else {
+      h.push('<p class="pending-note">Esta ficha todavía no está redactada en el prototipo.</p>');
+    }
+    if (n.py && n.py.length) h.push(`<section class="blk"><h3>En Python</h3><ul class="py">${n.py.map(pyItem).join("")}</ul></section>`);
+    if (n.rel && n.rel.length) h.push(`<section class="blk"><h3>Relacionados</h3><div class="chips">${n.rel.map(chip).join("")}</div></section>`);
+    if (n.children) h.push(`<section class="blk"><h3>En esta rama (${n.children.length})</h3><div class="chips">${n.children.map((c) => chip(c.id)).join("")}</div></section>`);
+    const i = order.indexOf(n), prev = order[i - 1], next = order[i + 1];
+    h.push('<footer class="seq">' +
+      `<button type="button" class="btn" data-go="${prev ? prev.id : ""}"${prev ? "" : " disabled"}>Anterior</button>` +
+      `<span class="pos">${i} de ${total}</span>` +
+      `<button type="button" class="btn" data-go="${next ? next.id : ""}"${next ? "" : " disabled"}>Siguiente</button></footer>`);
+    if (n.depth === 0) h.push('<p class="foot">Pasa el ratón por un concepto para ver su idea en una frase; púlsalo para abrir su ficha y su rama. Cada área lleva su color de la escala viridis. Atajos: <kbd>/</kbd> para buscar, <kbd>←</kbd> y <kbd>→</kbd> para pasar al concepto anterior o siguiente.</p>');
+    ficha.innerHTML = h.join("");
+    $("#peek-title").textContent = n.name;
+    $("#peek-frase").textContent = n.frase || "";
+    $("#panel").scrollTop = 0;
+    updatePeek();
+  }
+
+  // Altura de la hoja asomada (móvil): lo que mida la cabecera con nombre y frase
+  function updatePeek() {
+    if (!isMobile()) return;
+    const h = $("#handle").offsetHeight;
+    if (h) document.documentElement.style.setProperty("--peek", h + "px");
+  }
+
+  $("#panel").addEventListener("click", (e) => {
+    const go = e.target.closest("[data-go]");
+    if (go && go.dataset.go) { select(go.dataset.go, { expand: true }); return; }
+    const cp = e.target.closest(".copy");
+    if (cp) copiar(cp);
+  });
+
+  function copiar(btn) {
+    const done = (t) => { btn.textContent = t; setTimeout(() => (btn.textContent = "Copiar"), 1400); };
+    const fallback = () => {
+      const r = document.createRange(); r.selectNodeContents(btn.previousElementSibling);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r); done("Seleccionado");
+    };
+    try { navigator.clipboard.writeText(btn.dataset.copy).then(() => done("Copiado"), fallback); }
+    catch (e) { fallback(); }
+  }
+
+  // ---------- Hoja inferior (móvil) ----------
+  const panel = $("#panel"), handle = $("#handle");
+  function setSheet(state) {
+    panel.dataset.state = state;
+    handle.setAttribute("aria-expanded", String(state === "open"));
+    $("#peek-accion").textContent = state === "open" ? "Ocultar" : "Ver ficha";
+  }
+  handle.addEventListener("click", () => setSheet(panel.dataset.state === "open" ? "peek" : "open"));
+
+  // ---------- Buscador ----------
+  const q = $("#q"), res = $("#resultados");
+  const idx = order.filter((n) => n.depth > 0).map((n) => ({
+    n, name: norm(n.name), all: norm([n.name, n.en || "", n.frase || "", n.desc || "", n.cuando || "", n.ej || ""].join(" ")),
+  }));
+  let hits = [], active = -1;
+
+  function buscar(texto) {
+    const t = norm(texto.trim()).split(/\s+/).filter(Boolean);
+    if (!t.length) return [];
+    const out = [];
+    idx.forEach((r) => {
+      if (!t.every((w) => r.all.includes(w))) return;
+      const frase = t.join(" ");
+      const score = r.name.startsWith(frase) ? 4 : r.name.includes(frase) ? 3 : t.every((w) => r.name.includes(w)) ? 2 : 1;
+      out.push([score, r.n]);
+    });
+    out.sort((a, b) => b[0] - a[0] || a[1].name.length - b[1].name.length);
+    return out.slice(0, 14).map((x) => x[1]);
+  }
+
+  function pintarResultados() {
+    if (!q.value.trim()) { cerrarResultados(); return; }
+    res.innerHTML = hits.length ? hits.map((n, i) =>
+      `<li><button type="button" role="option" id="op-${i}" data-go="${n.id}" aria-selected="${i === active}" style="--c:${color(n)}">` +
+      `<span class="dot"></span><span class="r-name">${esc(n.name)}</span><span class="r-area">${esc(n.area ? n.area.name : "")}</span>` +
+      (n.frase ? `<span class="r-frase">${esc(n.frase)}</span>` : "") + `</button></li>`).join("")
+      : '<li class="vacio">Ningún concepto coincide. Prueba con otra palabra o con el término en inglés.</li>';
+    res.hidden = false;
+    q.setAttribute("aria-expanded", "true");
+    if (active >= 0) q.setAttribute("aria-activedescendant", `op-${active}`); else q.removeAttribute("aria-activedescendant");
+  }
+  function cerrarResultados() { res.hidden = true; q.setAttribute("aria-expanded", "false"); active = -1; }
+  function elegir(id) { cerrarResultados(); q.value = ""; select(id, { expand: true, sheet: "peek" }); }
+
+  q.addEventListener("input", () => { hits = buscar(q.value); active = hits.length ? 0 : -1; pintarResultados(); });
+  q.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" && hits.length) { active = (active + 1) % hits.length; pintarResultados(); e.preventDefault(); }
+    else if (e.key === "ArrowUp" && hits.length) { active = (active - 1 + hits.length) % hits.length; pintarResultados(); e.preventDefault(); }
+    else if (e.key === "Enter" && active >= 0) { elegir(hits[active].id); e.preventDefault(); }
+    else if (e.key === "Escape") { cerrarResultados(); q.blur(); }
+  });
+  res.addEventListener("mousedown", (e) => e.preventDefault());       // no perder el foco al pulsar
+  res.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b) elegir(b.dataset.go); });
+  q.addEventListener("blur", () => setTimeout(cerrarResultados, 120));
+
+  // ---------- Herramientas ----------
+  $("#b-general").addEventListener("click", () => {
+    expanded.clear(); expanded.add(DATA.id);
+    selected = DATA.id; setPath(); render(); renderCard(DATA);
+    viewport.scrollTo({ left: 0, top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    try { history.replaceState(null, "", "#" + DATA.id); } catch (e) { /* nada */ }
+  });
+  $("#b-rama").addEventListener("click", () => {
+    const n = byId.get(selected), nuevos = new Set();
+    (function all(m) { if (m.children) { if (!expanded.has(m.id)) m.children.forEach((c) => nuevos.add(c.id)); expanded.add(m.id); m.children.forEach(all); } })(n);
+    render(nuevos); reveal(n);
+  });
+  function setZoom(d) {
+    hideTip();
+    const n = byId.get(selected);
+    zi = Math.min(ZOOMS.length - 1, Math.max(0, zi + d));
+    $("#z-nivel").textContent = Math.round(ZOOMS[zi] * 100) + " %";
+    $("#z-menos").disabled = zi === 0; $("#z-mas").disabled = zi === ZOOMS.length - 1;
+    render(); reveal(n, true);
+  }
+  $("#z-menos").addEventListener("click", () => setZoom(-1));
+  $("#z-mas").addEventListener("click", () => setZoom(1));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") hideTip();
+    const t = e.target, escribiendo = t.matches && t.matches("input, textarea");
+    if (e.key === "/" && !escribiendo) { e.preventDefault(); q.focus(); return; }
+    if (escribiendo || e.metaKey || e.ctrlKey || e.altKey) return;
+    const i = order.indexOf(byId.get(selected));
+    if (e.key === "ArrowRight" && order[i + 1]) { e.preventDefault(); select(order[i + 1].id, { expand: true }); }
+    if (e.key === "ArrowLeft" && i > 0) { e.preventDefault(); select(order[i - 1].id, { expand: true }); }
+    if (e.key === "Escape" && isMobile()) setSheet("peek");
+  });
+
+  // ---------- Arranque ----------
+  const inicial = byId.has(location.hash.slice(1)) ? location.hash.slice(1) : DEFAULT_ID;
+  select(inicial, { expand: true, instant: true });
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { heights.clear(); render(); reveal(byId.get(selected), true); updatePeek(); });
+  }
+  addEventListener("resize", () => { hideTip(); updatePeek(); });
+})();
+</script>

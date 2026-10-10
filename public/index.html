@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Conceptos, herramientas y guía de uso de la inteligencia artificial en un mapa interactivo.">
+<meta property="og:title" content="Mapa interactivo de IA">
+<meta property="og:description" content="Conceptos, herramientas y guía de uso de la inteligencia artificial en un mapa interactivo.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#eef1f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1312" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M9%2016%20C15%2016%2015%208%2022%208%20M9%2016%20C15%2016%2015%2024%2022%2024%22%20fill%3D%22none%22%20stroke%3D%22%232a778e%22%20stroke-width%3D%222.4%22/%3E%3Ccircle%20cx%3D%228%22%20cy%3D%2216%22%20r%3D%225%22%20fill%3D%22%23440154%22/%3E%3Ccircle%20cx%3D%2223%22%20cy%3D%228%22%20r%3D%224.5%22%20fill%3D%22%2321a685%22/%3E%3Ccircle%20cx%3D%2223%22%20cy%3D%2224%22%20r%3D%224.5%22%20fill%3D%22%2395d840%22/%3E%3C/svg%3E">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Mapa interactivo de IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Recursive:wght,MONO@300..1000,0..1&display=swap">
+<style>
+/* Layout: el mapa es un grafo de nodos y cables (como un editor de nodos de ML) sobre una retícula de puntos;
+   la ficha del concepto vive fija a la derecha y, en móvil, en una hoja inferior. Áreas coloreadas con viridis. */
+:root {
+  --bg: #eef1f0;        /* lienzo: gris frío con sesgo hacia el teal del acento */
+  --surface: #fbfcfc;   /* nodos, barra y panel */
+  --ink: #13201e;       /* texto principal */
+  --muted: #5a6a66;     /* texto secundario */
+  --line: #cfd8d5;      /* bordes */
+  --grid: #c2cdca;      /* puntos de la retícula */
+  --accent: #1d7c77;    /* selección e interacción (teal de viridis, oscurecido) */
+  --code-bg: #e9efed;
+  --shadow: rgba(19, 32, 30, .16);
+  --tip-bg: #16302c;    /* tarjeta flotante "en una frase": invertida respecto al lienzo */
+  --tip-fg: #eef5f3;
+  --font-ui: "Recursive", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Recursive", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* 18 áreas en orden del árbol, muestreadas de la escala viridis (tramo legible sobre fondo claro) */
+  --a0:#440154; --a1:#471365; --a2:#482475; --a3:#46337f; --a4:#414287; --a5:#3b518b;
+  --a6:#355e8d; --a7:#2f6b8e; --a8:#2a778e; --a9:#26828e; --a10:#218f8d; --a11:#1e9b8a;
+  --a12:#21a685; --a13:#2db27d; --a14:#40bd72; --a15:#58c765; --a16:#75d054; --a17:#95d840;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1312; --surface: #151d1c; --ink: #e2ebe9; --muted: #92a39f;
+    --line: #283331; --grid: #22302d; --accent: #49beb2; --code-bg: #1d2826; --shadow: rgba(0, 0, 0, .5);
+    --tip-bg: #e4efec; --tip-fg: #10201d;
+    --a0:#433e85; --a1:#3e4c8a; --a2:#38598c; --a3:#31668e; --a4:#2c718e; --a5:#287d8e;
+    --a6:#23898e; --a7:#1f948c; --a8:#1fa088; --a9:#25ac82; --a10:#34b679; --a11:#48c16e;
+    --a12:#63cb5f; --a13:#7fd34e; --a14:#9dd93b; --a15:#c0df25; --a16:#dfe318; --a17:#fde725;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1312; --surface: #151d1c; --ink: #e2ebe9; --muted: #92a39f;
+  --line: #283331; --grid: #22302d; --accent: #49beb2; --code-bg: #1d2826; --shadow: rgba(0, 0, 0, .5);
+  --tip-bg: #e4efec; --tip-fg: #10201d;
+  --a0:#433e85; --a1:#3e4c8a; --a2:#38598c; --a3:#31668e; --a4:#2c718e; --a5:#287d8e;
+  --a6:#23898e; --a7:#1f948c; --a8:#1fa088; --a9:#25ac82; --a10:#34b679; --a11:#48c16e;
+  --a12:#63cb5f; --a13:#7fd34e; --a14:#9dd93b; --a15:#c0df25; --a16:#dfe318; --a17:#fde725;
+  color-scheme: dark;
+}
+
+html { box-sizing: border-box; height: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font: 400 14px/1.45 var(--font-ui); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+
+/* ---------- Barra superior ---------- */
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 12px 20px;
+       background: var(--surface); border-bottom: 1px solid var(--line); position: relative; z-index: 5; }
+.brand h1 { margin: 0; font: 850 22px/1.05 var(--font-ui); letter-spacing: -0.02em; }
+.meta { margin: 4px 0 0; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.pill { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); }
+.search { position: relative; flex: 1 1 260px; max-width: 440px; }
+.search input { width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px;
+                background: var(--bg); color: var(--ink); font: 450 14px/1.2 var(--font-ui); }
+.search input::placeholder { color: var(--muted); }
+#resultados { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30; margin: 0; padding: 4px;
+              list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 9px;
+              box-shadow: 0 12px 32px var(--shadow); max-height: min(60vh, 440px); overflow: auto; }
+#resultados button { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 2px;
+                     align-items: baseline; width: 100%; padding: 8px 10px; border: 0;
+                     border-radius: 6px; background: none; text-align: left; cursor: pointer; }
+#resultados button[aria-selected="true"], #resultados button:hover { background: var(--bg); }
+#resultados .dot { align-self: center; }
+.r-name { min-width: 0; font-weight: 560; }
+.r-area { color: var(--muted); font-size: 12px; text-align: right; max-width: 14em; }
+.r-frase { grid-column: 2 / 4; color: var(--muted); font-size: 12.5px; line-height: 1.35;
+           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#resultados .vacio { padding: 10px; color: var(--muted); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
+.btn { padding: 8px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface);
+       font-size: 13px; line-height: 1; cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: .45; cursor: default; }
+.zoom { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+.zoom button { width: 32px; height: 31px; border: 0; background: none; font-size: 16px; cursor: pointer; }
+#z-nivel { min-width: 48px; text-align: center; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- Escenario: mapa + ficha ---------- */
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) clamp(330px, 31vw, 440px); min-height: 0; }
+.viewport { overflow: auto; min-height: 0; overscroll-behavior: contain;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 1px 1px, var(--grid) 1.1px, transparent 1.5px);
+            background-size: 22px 22px; background-attachment: local; }
+.sizer { position: relative; }
+.canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#wires { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.w { fill: none; stroke-width: 1.4; opacity: .4; }
+.w.on { opacity: 1; stroke-width: 2.6; }
+.w.draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .4s ease-out forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* Nodos: caja con puerto de entrada (izquierda) y de salida (derecha, solo si tiene hijos) */
+.node { position: absolute; left: 0; top: 0; width: 216px; display: flex; align-items: center; gap: 8px;
+        padding: 8px 14px 8px 13px; border: 1px solid var(--line); border-radius: 7px;
+        background: var(--surface); font: 430 13.5px/1.3 var(--font-ui); text-align: left; cursor: pointer; }
+.node:hover { border-color: var(--muted); }
+.node .label { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.node .nw { white-space: nowrap; }
+.node .count { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.port { position: absolute; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%;
+        background: var(--c, var(--accent)); }
+.port.in { left: -5.5px; }
+.port.out { right: -5.5px; background: var(--surface); border: 2px solid var(--c, var(--accent)); }
+.node.open .port.out { background: var(--c, var(--accent)); }
+.node.d0 { width: 168px; padding: 14px 16px; border-color: var(--ink); font: 850 17px/1.15 var(--font-ui); letter-spacing: -0.01em; }
+.node.d0 .port.in { display: none; }
+.node.d1 { font-weight: 640; font-size: 14.5px; }
+.node.pending .label { color: var(--muted); }
+.node.pending { border-style: dashed; }
+.node.path { border-color: var(--c, var(--accent)); }
+.node.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent);
+            background: color-mix(in oklab, var(--accent) 9%, var(--surface)); }
+.node.sel .label { color: var(--ink); }
+.node.enter { animation: entra .3s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 14ms); }
+@keyframes entra { from { opacity: 0; translate: -14px 0; } to { opacity: 1; translate: 0 0; } }
+
+/* "En una frase": tarjeta flotante al pasar el ratón (o enfocar con teclado). No captura el ratón. */
+.tip { position: fixed; z-index: 40; max-width: 300px; padding: 10px 13px 11px; border-radius: 9px;
+       background: var(--tip-bg); color: var(--tip-fg); box-shadow: 0 10px 28px var(--shadow);
+       font-size: 13.5px; line-height: 1.42; pointer-events: none;
+       opacity: 0; translate: 0 -3px; transition: opacity .14s ease, translate .14s ease; }
+.tip.down { translate: 0 3px; }
+.tip.on { opacity: 1; translate: 0 0; }
+.tip p { margin: 0; display: flex; gap: 9px; align-items: baseline; }
+.tip .dot { position: relative; top: -1px; }
+.tip::before { content: ""; position: absolute; left: var(--ax, 24px); width: 10px; height: 10px; margin-left: -5px;
+               background: var(--tip-bg); transform: rotate(45deg); }
+.tip:not(.down)::before { top: -4px; }
+.tip.down::before { bottom: -4px; }
+
+/* ---------- Ficha ---------- */
+.panel { position: relative; min-height: 0; overflow: auto; background: var(--surface); border-left: 1px solid var(--line); }
+.handle { display: none; }
+#ficha { padding: 22px 26px 30px; max-width: 64ch; }
+.crumbs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; font-size: 12.5px; color: var(--muted); }
+.crumbs button { padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; text-align: left; }
+.crumbs button:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+#ficha h2 { margin: 10px 0 0; font: 800 27px/1.1 var(--font-ui); letter-spacing: -0.02em; text-wrap: balance; }
+.area-tag { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+.en { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; }
+.lead { margin: 14px 0 0; font-size: 17px; font-weight: 520; line-height: 1.42; text-wrap: pretty; }
+.desc { margin: 12px 0 0; font-size: 15px; line-height: 1.6; }
+.blk { margin-top: 22px; }
+.blk h3 { margin: 0 0 8px; font: 650 13px/1.2 var(--font-ui); color: var(--muted); }
+.blk > p { margin: 0; font-size: 14.5px; line-height: 1.55; }
+.cuando { padding: 12px 14px 13px; border-radius: 9px; background: color-mix(in oklab, var(--accent) 9%, var(--surface)); }
+.cuando h3 { color: var(--accent); }
+.hp { display: grid; grid-template-columns: minmax(0, max-content) minmax(0, 1fr); gap: 7px 14px; margin: 0; font-size: 14px; line-height: 1.45; }
+.hp dt { min-width: 0; }
+.hp dt code { display: inline-block; padding: 2px 6px; border-radius: 5px; background: var(--code-bg); font-size: 12.5px; overflow-wrap: anywhere; }
+.hp dd { margin: 0; min-width: 0; color: var(--ink); }
+.pending-note { margin: 16px 0 0; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); }
+code { font-family: var(--font-mono); font-variation-settings: "MONO" 1; font-size: .92em; }
+.desc code, .ej code { padding: 1px 5px; border-radius: 4px; background: var(--code-bg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px 5px 9px; border: 1px solid var(--line);
+        border-radius: 999px; background: var(--bg); font-size: 12.5px; line-height: 1.25; text-align: left; cursor: pointer; }
+.chip:hover { border-color: var(--c, var(--muted)); }
+.dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--c, var(--accent)); }
+.py { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.py li { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 5px 5px 11px; border-radius: 7px; background: var(--code-bg); }
+.py code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 12.5px; padding-block: 3px; }
+.copy, .docs { flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--line);
+               border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 12px; line-height: 1.2;
+               text-decoration: none; cursor: pointer; }
+.copy:hover, .docs:hover { border-color: var(--muted); }
+.docs svg { width: 11px; height: 11px; }
+.seq { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--line); }
+.seq .pos { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.foot { margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.foot kbd { font-family: var(--font-mono); font-variation-settings: "MONO" 1; padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; }
+
+/* ---------- Móvil: la ficha pasa a una hoja inferior (asomada / abierta) ---------- */
+@media (max-width: 860px) {
+  .bar { padding: 10px 16px; gap: 10px 12px; }
+  .brand { flex: 1 1 auto; min-width: 0; }
+  .brand h1 { font-size: 19px; }
+  .tools { flex: none; align-self: flex-start; }
+  .search { order: 3; flex-basis: 100%; max-width: none; }
+  .btn-rama, .zoom { display: none; }
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  /* Hoja inferior en dos tiempos: asomada (nombre + frase) y abierta (ficha completa) */
+  .sizer { margin-bottom: calc(var(--peek, 84px) + 16px); }
+  .panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; max-height: 78%;
+           border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+           box-shadow: 0 -10px 30px var(--shadow); padding-bottom: env(safe-area-inset-bottom, 0px);
+           transform: translateY(calc(100% - var(--peek, 84px) - env(safe-area-inset-bottom, 0px))); transition: transform .3s ease; }
+  .panel[data-state="open"] { transform: none; }
+  .handle { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; width: 100%;
+            padding: 16px 18px 12px; border: 0; border-bottom: 1px solid var(--line); background: var(--surface); text-align: left; cursor: pointer; }
+  .handle::before { content: ""; position: absolute; top: 6px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line); }
+  .peek-text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+  #peek-title { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #peek-frase { color: var(--muted); font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #peek-accion { flex: none; color: var(--accent); font-size: 13px; font-weight: 600; }
+  .panel[data-state="open"] #peek-frase { display: none; }
+  .tip { display: none; }
+  #ficha { padding: 16px 18px 26px; }
+  #ficha h2 { font-size: 23px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <h1>Mapa interactivo de IA</h1>
+      <p class="meta"><span>Conceptos, herramientas y guía de uso</span><span class="pill" id="m-estado" hidden></span></p>
+    </div>
+    <div class="search" role="search">
+      <label for="q" class="sr">Buscar un concepto</label>
+      <input id="q" type="search" placeholder="Buscar un concepto" autocomplete="off" spellcheck="false"
+             role="combobox" aria-expanded="false" aria-controls="resultados" aria-autocomplete="list">
+      <ul id="resultados" role="listbox" hidden></ul>
+    </div>
+    <div class="tools">
+      <button class="btn" id="b-general" type="button">Vista general</button>
+      <button class="btn btn-rama" id="b-rama" type="button">Expandir rama</button>
+      <div class="zoom" role="group" aria-label="Zoom del mapa">
+        <button id="z-menos" type="button" aria-label="Alejar">−</button>
+        <span id="z-nivel" aria-live="polite">100 %</span>
+        <button id="z-mas" type="button" aria-label="Acercar">+</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="viewport" id="viewport" aria-label="Mapa de conceptos">
+      <div class="sizer" id="sizer">
+        <div class="canvas" id="canvas">
+          <svg id="wires" aria-hidden="true"></svg>
+          <div id="nodes"></div>
+        </div>
+      </div>
+    </div>
+    <aside class="panel" id="panel" data-state="peek" aria-labelledby="ficha-titulo">
+      <button class="handle" id="handle" type="button" aria-controls="ficha" aria-expanded="false">
+        <span class="peek-text"><span id="peek-title"></span><span id="peek-frase"></span></span><span id="peek-accion">Ver ficha</span>
+      </button>
+      <article id="ficha"></article>
+    </aside>
+  </main>
+</div>
+<div class="tip" id="tip" role="tooltip" hidden><p><span class="dot"></span><span id="tip-text"></span></p></div>
+
+<script type="application/json" id="datos">{"id":"inteligencia-artificial","name":"Inteligencia artificial","en":"artificial intelligence","frase":"Sistemas que perciben, razonan, aprenden o generan contenido; hoy casi siempre aprendiendo de datos.","desc":"Campo que construye sistemas capaces de realizar tareas que asociamos con la inteligencia: percibir, razonar, aprender, predecir o generar contenido. Casi toda la IA actual se basa en aprendizaje automático, es decir, en modelos que aprenden patrones a partir de datos en lugar de seguir reglas escritas a mano.","ej":"Un asistente que entiende tu pregunta, busca en documentos y redacta la respuesta combina varias ramas de este mapa: lenguaje, recuperación de información y agentes.","rel":["ia-ml-dl","breve-historia-de-la-ia","cuatro-ingredientes"],"children":[{"id":"fundamentos","name":"Fundamentos","en":"foundations","frase":"Las ideas comunes a todo modelo: aprender de los datos y generalizar a casos nuevos.","desc":"Las ideas que comparten todos los modelos: aprender de los datos optimizando un objetivo y generalizar a casos que el modelo no ha visto. Aquí están también los paradigmas de aprendizaje y las nociones de distancia y similitud que reaparecen por todo el mapa.","ej":"Un modelo que acierta el 99 % en entrenamiento y el 70 % con datos nuevos ilustra el problema central de la disciplina: el sobreajuste.","rel":["generalizacion","cuatro-ingredientes","paradigmas-de-aprendizaje"],"children":[{"id":"ia-ml-dl","name":"IA, machine learning y deep learning: cómo encajan"},{"id":"programacion-vs-ml","name":"Programación clásica vs aprendizaje automático"},{"id":"breve-historia-de-la-ia","name":"Breve historia de la IA"},{"id":"cuatro-ingredientes","name":"Los cuatro ingredientes: datos, modelo, objetivo y optimización"},{"id":"parametros-e-hiperparametros","name":"Parámetros e hiperparámetros"},{"id":"teoria-de-la-decision","name":"Teoría de la decisión","children":[{"id":"riesgo-de-bayes","name":"Riesgo de Bayes"},{"id":"minimizacion-del-riesgo-empirico","name":"Minimización del riesgo empírico"}]},{"id":"generalizacion","name":"Generalización","children":[{"id":"sobreajuste","name":"Sobreajuste (overfitting)"},{"id":"infraajuste","name":"Infraajuste (underfitting)"},{"id":"compromiso-sesgo-varianza","name":"Compromiso sesgo-varianza"},{"id":"regularizacion","name":"Regularización (idea general)"}]},{"id":"distancia-y-similitud","name":"Distancia y similitud","children":[{"id":"distancia-euclidea","name":"Distancia euclídea (L2)"},{"id":"distancia-manhattan","name":"Distancia Manhattan (L1) y normas Lp"},{"id":"similitud-coseno","name":"Similitud coseno"},{"id":"distancia-de-mahalanobis","name":"Distancia de Mahalanobis"}]},{"id":"paradigmas-de-aprendizaje","name":"Paradigmas de aprendizaje","children":[{"id":"aprendizaje-semisupervisado","name":"Aprendizaje semisupervisado","children":[{"id":"cluster-then-label","name":"Cluster-then-label"}]},{"id":"supervision-debil","name":"Supervisión débil","children":[{"id":"etiquetas-ruidosas","name":"Etiquetas ruidosas"},{"id":"etiquetas-parciales","name":"Etiquetas parciales"},{"id":"proporciones-de-etiquetas","name":"Aprendizaje con proporciones de etiquetas"}]},{"id":"aprendizaje-activo","name":"Aprendizaje activo"},{"id":"aprendizaje-online","name":"Aprendizaje online"}]}]},{"id":"probabilidad-informacion-y-causalidad","name":"Probabilidad, información y causalidad","en":"probability, information theory & causality","frase":"Las matemáticas para razonar con incertidumbre, medir información y separar causa de correlación.","desc":"El lenguaje matemático de la incertidumbre. La probabilidad permite razonar con datos ruidosos. La teoría de la información mide cuánta información contiene una variable y cuánta comparte con otra. Los modelos gráficos y la causalidad ayudan a distinguir qué influye en qué, más allá de la simple correlación.","cuando":"Cuando necesitas cuantificar la incertidumbre, medir cuánto dependen unas variables de otras o razonar sobre causas y efectos.","ej":"Que dos variables estén correlacionadas no dice cuál causa la otra. Los métodos de descubrimiento causal intentan orientar esa flecha a partir de los datos.","rel":["teorema-de-bayes","entropia","red-bayesiana","correlacion-no-implica-causalidad"],"children":[{"id":"probabilidad-y-estadistica","name":"Probabilidad y estadística","children":[{"id":"probabilidad-frecuentista-vs-bayesiana","name":"Probabilidad frecuentista vs bayesiana"},{"id":"probabilidad-condicional","name":"Probabilidad condicional"},{"id":"teorema-de-bayes","name":"Teorema de Bayes"},{"id":"prior-verosimilitud-y-posterior","name":"Prior, verosimilitud y posterior"},{"id":"distribuciones-de-probabilidad","name":"Distribuciones de probabilidad"},{"id":"maxima-verosimilitud","name":"Máxima verosimilitud (MLE)"},{"id":"nll","name":"Log-verosimilitud negativa (NLL)"},{"id":"contraste-de-hipotesis","name":"Contraste de hipótesis","children":[{"id":"p-valor","name":"p-valor"},{"id":"intervalo-de-confianza","name":"Intervalo de confianza"},{"id":"test-chi-cuadrado","name":"Test chi-cuadrado"}]}]},{"id":"teoria-de-la-informacion","name":"Teoría de la información","children":[{"id":"informacion-shannon","name":"Información (Shannon)"},{"id":"entropia","name":"Entropía"},{"id":"divergencia-de-kullback-leibler","name":"Divergencia de Kullback-Leibler"},{"id":"informacion-mutua","name":"Información mutua"},{"id":"correlacion-total","name":"Correlación total"}]},{"id":"medidas-de-dependencia","name":"Medidas de dependencia","children":[{"id":"independencia-estadistica","name":"Independencia estadística"},{"id":"correlacion-de-pearson","name":"Correlación de Pearson"},{"id":"correlacion-de-spearman","name":"Correlación de Spearman"},{"id":"icc","name":"Coeficiente de correlación de información (ICC)"},{"id":"hsic","name":"HSIC (dependencia con kernels)"},{"id":"dependencia-condicional","name":"Dependencia condicional"}]},{"id":"modelos-graficos-probabilisticos","name":"Modelos gráficos probabilísticos","children":[{"id":"red-bayesiana","name":"Red bayesiana"},{"id":"aprendizaje-de-estructura","name":"Aprendizaje de estructura","children":[{"id":"algoritmo-pc","name":"Algoritmo PC"},{"id":"hill-climbing","name":"Búsqueda por ascenso de colinas (hill climbing)"}]},{"id":"regresion-lineal-bayesiana","name":"Regresión lineal bayesiana"},{"id":"hmm","name":"Modelo oculto de Márkov (HMM)"}]},{"id":"causalidad","name":"Causalidad","children":[{"id":"correlacion-no-implica-causalidad","name":"Correlación no implica causalidad"},{"id":"correlacion-espuria","name":"Correlación espuria"},{"id":"causalidad-de-granger","name":"Causalidad de Granger"},{"id":"informacion-dirigida","name":"Información dirigida"},{"id":"modelos-de-ruido-aditivo","name":"Modelos de ruido aditivo (causalidad desde residuos)"},{"id":"descubrimiento-causal","name":"Descubrimiento causal"}]}]},{"id":"flujo-de-trabajo-en-ml","name":"Flujo de trabajo en ML","en":"ML workflow","frase":"Todo lo que rodea al modelo: datos, validación, métricas, ajuste y puesta en producción.","desc":"Todo lo que rodea al modelo en un proyecto real: preparar los datos, separar entrenamiento y test, elegir métricas, ajustar hiperparámetros, desplegar y vigilar el modelo en producción. Los errores de esta parte, como la fuga de datos o una métrica mal elegida, suelen pesar más que la elección del algoritmo.","ej":"Un detector de fraude con un 99,9 % de accuracy puede ser inútil si solo el 0,1 % de las operaciones son fraudes; aquí la métrica que importa es el recall o la curva precisión-recall.","rel":["ciclo-de-vida-ml","fuga-de-datos","validacion-cruzada","mlops"],"children":[{"id":"ciclo-de-vida-ml","name":"Ciclo de vida de un proyecto de ML"},{"id":"linea-base","name":"Línea base (baseline)"},{"id":"datos-y-preprocesado","name":"Datos y preprocesado","children":[{"id":"eda","name":"Análisis exploratorio (EDA) y auditoría de datos"},{"id":"calidad-y-etiquetado-de-datos","name":"Calidad y etiquetado de datos"},{"id":"valores-faltantes-e-imputacion","name":"Valores faltantes e imputación"},{"id":"outliers","name":"Valores atípicos (outliers)"},{"id":"escalado-de-variables","name":"Escalado de variables","children":[{"id":"estandarizacion","name":"Estandarización (z-score)"},{"id":"normalizacion-min-max","name":"Normalización min-max"}]},{"id":"transformaciones-de-distribucion","name":"Transformaciones de distribución (log, cuantiles)"},{"id":"codificacion-de-variables-categoricas","name":"Codificación de variables categóricas"},{"id":"feature-engineering","name":"Ingeniería de características (feature engineering)"},{"id":"desbalanceo-de-clases","name":"Desbalanceo de clases","children":[{"id":"sobremuestreo","name":"Sobremuestreo (SMOTE, ADASYN)"},{"id":"submuestreo-y-ponderacion-de-clases","name":"Submuestreo y ponderación de clases"}]},{"id":"fuga-de-datos","name":"Fuga de datos (data leakage)"},{"id":"data-augmentation","name":"Aumento de datos (data augmentation)"},{"id":"pipelines-de-preprocesado","name":"Pipelines de preprocesado"}]},{"id":"particion-y-validacion","name":"Partición y validación","children":[{"id":"entrenamiento-validacion-y-test","name":"Entrenamiento, validación y test"},{"id":"validacion-cruzada","name":"Validación cruzada (k-fold)"},{"id":"validacion-en-series-temporales","name":"Validación en series temporales"}]},{"id":"metricas-de-evaluacion","name":"Métricas de evaluación","children":[{"id":"funcion-de-perdida-vs-metrica","name":"Función de pérdida vs métrica"},{"id":"metricas-de-regresion","name":"Métricas de regresión","children":[{"id":"mse-rmse-y-mae","name":"MSE, RMSE y MAE"},{"id":"r2","name":"Coeficiente de determinación (R²)"}]},{"id":"metricas-de-clasificacion","name":"Métricas de clasificación","children":[{"id":"matriz-de-confusion","name":"Matriz de confusión"},{"id":"accuracy","name":"Exactitud (accuracy) y exactitud balanceada"},{"id":"precision-y-recall","name":"Precisión y recall"},{"id":"f1-score","name":"F1-score"},{"id":"curva-roc-y-auc","name":"Curva ROC y AUC"},{"id":"curva-precision-recall","name":"Curva precisión-recall"},{"id":"umbral-de-decision","name":"Umbral de decisión"},{"id":"promedios-macro-y-micro","name":"Promedios macro y micro"}]}]},{"id":"ajuste-de-hiperparametros-y-automl","name":"Ajuste de hiperparámetros y AutoML","children":[{"id":"busqueda-en-rejilla-y-aleatoria","name":"Búsqueda en rejilla y aleatoria"},{"id":"optimizacion-bayesiana-de-hiperparametros","name":"Optimización bayesiana de hiperparámetros"},{"id":"automl","name":"AutoML"},{"id":"nas","name":"Búsqueda de arquitecturas neuronales (NAS)"}]},{"id":"despliegue-y-mlops","name":"Despliegue y MLOps","children":[{"id":"mlops","name":"MLOps"},{"id":"despliegue-e-inferencia","name":"Despliegue e inferencia"},{"id":"deriva-de-datos","name":"Monitorización y deriva de datos"}]},{"id":"herramientas-y-hardware","name":"Herramientas y hardware","children":[{"id":"gpu-y-tpu","name":"GPU y TPU"},{"id":"frameworks-de-ml","name":"Frameworks de ML (scikit-learn, Keras/TensorFlow, PyTorch, JAX)"},{"id":"hugging-face","name":"Hugging Face (Hub y librerías)"},{"id":"seguimiento-de-experimentos","name":"Seguimiento de experimentos (TensorBoard, W&B)"}]}]},{"id":"aprendizaje-supervisado","name":"Aprendizaje supervisado","en":"supervised learning","frase":"Aprender a predecir una respuesta conocida a partir de ejemplos etiquetados.","desc":"El modelo aprende, a partir de ejemplos etiquetados (X, y), una función que asigna una salida a cada entrada, y después la aplica para predecir casos nuevos. Si la salida es un número, el problema es de regresión; si es una categoría, de clasificación. Es el paradigma más usado en la industria.","cuando":"Cuando tienes ejemplos históricos con la respuesta correcta y quieres predecirla en casos nuevos.","ej":"Con miles de correos marcados como spam o no spam, entrenar un modelo que filtre los correos nuevos. Con viviendas ya vendidas, predecir el precio de una nueva.","py":[{"c":"modelo.fit(X_train, y_train)","s":1},{"c":"modelo.predict(X_test)","s":1}],"rel":["regresion-vs-clasificacion","aprendizaje-no-supervisado","entrenamiento-validacion-y-test","funcion-de-perdida-vs-metrica"],"children":[{"id":"regresion-vs-clasificacion","name":"Regresión vs clasificación","en":"regression vs classification","frase":"Predecir un número (regresión) o una categoría (clasificación).","desc":"Son los dos tipos de problema supervisado. En regresión la salida es un valor numérico continuo, como un precio o una temperatura. En clasificación es una categoría, como spam/no spam o la especie de una flor. Muchos clasificadores devuelven en realidad una probabilidad por clase, y la etiqueta final sale de aplicar un umbral.","ej":"Predecir el precio de una vivienda es regresión. Predecir si se venderá en menos de un mes es clasificación binaria.","py":[{"c":"sklearn.linear_model.LinearRegression","u":"https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html"},{"c":"sklearn.linear_model.LogisticRegression","u":"https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html"}],"rel":["metricas-de-regresion","metricas-de-clasificacion","umbral-de-decision","regresion-logistica"]},{"id":"clasificacion-multiclase-y-multietiqueta","name":"Clasificación multiclase y multietiqueta","en":"multiclass & multilabel classification","frase":"Elegir una clase entre varias, o asignar varias etiquetas a la vez.","desc":"En la clasificación multiclase cada ejemplo pertenece a una sola de K clases, y el modelo suele dar K probabilidades con una softmax. En la multietiqueta un ejemplo puede tener varias etiquetas a la vez, y cada una se predice por separado con una sigmoide. La estrategia One-vs-Rest convierte cualquier clasificador binario en multiclase entrenando un modelo por clase.","cuando":"Cuando hay más de dos clases posibles o cada ejemplo puede tener varias etiquetas simultáneas.","ej":"Reconocer qué dígito del 0 al 9 aparece en una imagen es multiclase. Etiquetar una película como \"comedia\" y \"romántica\" a la vez es multietiqueta.","py":[{"c":"sklearn.multiclass.OneVsRestClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.multiclass.OneVsRestClassifier.html"},{"c":"sklearn.multioutput.MultiOutputClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.multioutput.MultiOutputClassifier.html"}],"rel":["softmax","promedios-macro-y-micro","entropia-cruzada","regresion-logistica"]},{"id":"modelos-lineales","name":"Modelos lineales","en":"linear models","frase":"Predicción como suma ponderada de las variables: simple, rápida e interpretable.","desc":"Modelos cuya predicción es una combinación lineal de las variables, ŷ = w₀ + w₁x₁ + … + wₙxₙ, a veces pasada por una función como la sigmoide. Son rápidos, estables e interpretables, porque cada peso indica el efecto de su variable. Suelen ser la primera línea base que conviene probar.","cuando":"Como primera línea base y cuando necesitas un modelo fácil de explicar con relaciones aproximadamente lineales.","ej":"Estimar el consumo de un coche a partir de su peso y su potencia, y leer directamente cuántos litros añade cada 100 kg.","py":[{"c":"sklearn.linear_model","u":"https://scikit-learn.org/stable/api/sklearn.linear_model.html"}],"rel":["regresion-lineal","regresion-logistica","glm","linea-base"],"children":[{"id":"regresion-lineal","name":"Regresión lineal (mínimos cuadrados)","en":"linear regression (ordinary least squares)","frase":"La recta que mejor se ajusta a los datos minimizando el error al cuadrado.","desc":"Ajusta la recta o el hiperplano que minimiza la suma de los errores al cuadrado entre predicción y valor real. Tiene solución analítica (las ecuaciones normales), aunque también se puede resolver por descenso por gradiente. Supone relación lineal, errores independientes y varianza constante.","cuando":"Para predecir una variable numérica cuando la relación es aproximadamente lineal o necesitas interpretar el efecto de cada variable.","ej":"Predecir el precio de una vivienda como una constante más 2.000 € por m² y 15.000 € por cada habitación.","py":[{"c":"sklearn.linear_model.LinearRegression","u":"https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html"},{"c":"statsmodels.api.OLS","u":"https://www.statsmodels.org/stable/generated/statsmodels.regression.linear_model.OLS.html"}],"rel":["mse-rmse-y-mae","ridge-lasso-y-elastic-net","descenso-por-gradiente","regresion-lineal-bayesiana"]},{"id":"regresion-polinomica-e-interacciones","name":"Regresión polinómica e interacciones","en":"polynomial regression & interaction terms","frase":"Añadir potencias y productos de variables para captar curvas e interacciones.","desc":"Extiende el modelo lineal añadiendo como variables nuevas potencias (x², x³) y productos entre variables (x₁·x₂). Sigue siendo lineal en los parámetros, pero capta curvas e interacciones, es decir, efectos de una variable que dependen del valor de otra. Con muchos términos crece el riesgo de sobreajuste.","cuando":"Cuando un modelo lineal se queda corto porque la relación es curva o el efecto de una variable depende de otra.","ej":"La publicidad puede vender más en temporada alta. El término publicidad × temporada recoge esa interacción.","hp":[["degree","grado del polinomio; más grado, más flexibilidad y más riesgo de sobreajuste"],["interaction_only","genera solo productos entre variables, sin potencias"]],"py":[{"c":"sklearn.preprocessing.PolynomialFeatures","u":"https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html"}],"rel":["regresion-lineal","feature-engineering","sobreajuste","gam"]},{"id":"ridge-lasso-y-elastic-net","name":"Ridge, Lasso y Elastic Net","en":"Ridge, Lasso & Elastic Net","frase":"Regresión lineal con penalización de los pesos para evitar el sobreajuste.","desc":"Versiones regularizadas de la regresión lineal que penalizan los pesos grandes para reducir el sobreajuste. Ridge (L2) encoge todos los coeficientes hacia cero. Lasso (L1) lleva algunos exactamente a cero, y con ello selecciona variables. Elastic Net combina ambas penalizaciones. La fuerza de la penalización, α, es un hiperparámetro.","cuando":"Cuando tienes muchas variables, correlacionadas entre sí o con pocos datos; Lasso, además, cuando quieres que el modelo seleccione variables.","ej":"Con 500 variables candidatas y pocos datos, Lasso se queda con las 20 que tienen efecto real y anula el resto.","hp":[["alpha","fuerza de la penalización; más alta, coeficientes más pequeños"],["l1_ratio","en Elastic Net, mezcla de penalizaciones (0 = Ridge, 1 = Lasso)"]],"py":[{"c":"sklearn.linear_model.Ridge","u":"https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html"},{"c":"sklearn.linear_model.Lasso","u":"https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html"},{"c":"sklearn.linear_model.ElasticNet","u":"https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html"}],"rel":["regularizacion","regresion-lineal","metodos-integrados","penalizacion-l1-y-l2"]},{"id":"regresion-logistica","name":"Regresión logística","en":"logistic regression","frase":"Modelo lineal que convierte una suma ponderada en la probabilidad de una clase.","desc":"Modelo lineal de clasificación binaria. Calcula una combinación lineal de las variables y la transforma con la sigmoide en una probabilidad entre 0 y 1. Se entrena minimizando la entropía cruzada, lo que equivale a máxima verosimilitud. Sus coeficientes se leen en log-odds, por eso se usa mucho cuando hay que explicar las decisiones.","cuando":"Para clasificación binaria como línea base sólida, sobre todo si necesitas probabilidades fiables y explicar el peso de cada variable.","ej":"Estimar la probabilidad de que un paciente tenga diabetes a partir de su edad, su IMC y su glucosa, y marcarlo como positivo si supera 0,5.","hp":[["C","inversa de la regularización; más pequeño, modelo más simple"],["l1_ratio","tipo de penalización (0 = L2, 1 = L1, valores intermedios = Elastic Net)"],["class_weight","compensa clases desbalanceadas (\"balanced\")"]],"py":[{"c":"sklearn.linear_model.LogisticRegression","u":"https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html"}],"rel":["odds-y-odds-ratio","sigmoide-y-tanh","entropia-cruzada","glm"],"children":[{"id":"odds-y-odds-ratio","name":"Odds y odds ratio","en":"odds & odds ratio","frase":"Por cuánto se multiplican las probabilidades a favor de un suceso al cambiar una variable.","desc":"Las odds son el cociente p/(1−p) entre la probabilidad de que ocurra un suceso y la de que no ocurra. En la regresión logística, cada coeficiente β dice cuánto cambian las log-odds por cada unidad de su variable. e^β es el odds ratio, el factor por el que se multiplican las odds; un odds ratio de 2 significa que se duplican.","cuando":"Para interpretar y comunicar el efecto de cada variable en una regresión logística.","ej":"Si fumar tiene un odds ratio de 3 en un modelo de enfermedad cardíaca, las odds de un fumador triplican las de un no fumador con el resto de variables iguales.","py":[{"c":"np.exp(modelo.coef_)","s":1}],"rel":["regresion-logistica","modelos-interpretables-por-diseno","intervalo-de-confianza"]}]},{"id":"glm","name":"Modelos lineales generalizados (GLM)","en":"generalized linear models","frase":"Regresión lineal generalizada a conteos, proporciones o cantidades positivas mediante una función de enlace.","desc":"Generalizan la regresión lineal a respuestas que no siguen una normal. Conectan una combinación lineal de las variables con la media de la respuesta mediante una función de enlace, y suponen una distribución de la familia exponencial. La regresión lineal (enlace identidad, normal) y la logística (logit, binomial) son casos particulares; la de Poisson modela conteos.","cuando":"Cuando la variable a predecir no es normal: conteos (Poisson), sí/no (binomial) o cantidades positivas y asimétricas (gamma).","ej":"Predecir cuántos siniestros tendrá un conductor en un año con una regresión de Poisson y enlace logarítmico.","hp":[["alpha","fuerza de la regularización en los modelos de scikit-learn"],["family","distribución de la respuesta y su enlace en statsmodels (Poisson, Binomial, Gamma)"]],"py":[{"c":"sklearn.linear_model.PoissonRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html"},{"c":"statsmodels.api.GLM","u":"https://www.statsmodels.org/stable/generated/statsmodels.genmod.generalized_linear_model.GLM.html"}],"rel":["regresion-lineal","regresion-logistica","glmm","gam"]},{"id":"glmm","name":"Modelos mixtos (GLMM)","en":"(generalized) linear mixed models","frase":"Modelos lineales con efectos aleatorios para datos agrupados o medidas repetidas.","desc":"Modelos lineales (o generalizados) que añaden efectos aleatorios para datos agrupados, jerárquicos o con medidas repetidas. Los efectos fijos son comunes a todos los datos, mientras que los aleatorios dejan que cada grupo (un paciente, un colegio, una tienda) tenga su propia desviación. Así se recoge la correlación entre observaciones del mismo grupo.","cuando":"Cuando las observaciones vienen en grupos (pacientes, colegios, tiendas) que comparten características dentro de cada grupo.","ej":"Analizar las notas de alumnos de muchos colegios dejando que cada colegio tenga su propio nivel de partida (intercepto aleatorio).","hp":[["groups","variable que define los grupos"],["re_formula","qué efectos varían de un grupo a otro (por defecto, solo el intercepto)"]],"py":[{"c":"statsmodels.formula.api.mixedlm","u":"https://www.statsmodels.org/stable/generated/statsmodels.formula.api.mixedlm.html"},{"c":"statsmodels.genmod.bayes_mixed_glm.BinomialBayesMixedGLM","u":"https://www.statsmodels.org/stable/generated/statsmodels.genmod.bayes_mixed_glm.BinomialBayesMixedGLM.html"}],"rel":["glm","regresion-lineal-bayesiana","modelos-interpretables-por-diseno"]},{"id":"gam","name":"Modelos aditivos generalizados (GAM)","en":"generalized additive models","frase":"Suma de curvas suaves, una por variable: no lineal pero interpretable.","desc":"Sustituyen cada término lineal βⱼxⱼ por una función suave fⱼ(xⱼ), normalmente un spline, y suman los efectos: g(E[y]) = β₀ + f₁(x₁) + … + fₙ(xₙ). Captan relaciones no lineales sin perder interpretabilidad, porque el efecto de cada variable se puede dibujar por separado.","cuando":"Cuando las relaciones no son lineales pero necesitas ver y explicar el efecto de cada variable por separado.","ej":"Modelar el riesgo de hospitalización según la edad con una curva en U, más alta en niños y ancianos, algo que una recta no puede captar.","hp":[["n_splines","número de tramos de cada curva; más tramos, curvas más flexibles"],["lam","penalización de la rugosidad; más alta, curvas más suaves"]],"py":[{"c":"pygam.LinearGAM","u":"https://github.com/dswah/pyGAM"},{"c":"interpret.glassbox.ExplainableBoostingClassifier","u":"https://interpret.ml/docs/ebm.html"}],"rel":["glm","ebm","regresion-polinomica-e-interacciones"]}]},{"id":"knn","name":"k vecinos más cercanos (k-NN)","en":"k-nearest neighbors","frase":"Predice copiando a los k ejemplos más parecidos.","desc":"Para predecir un caso nuevo, busca los k ejemplos de entrenamiento más cercanos según una distancia. Después vota su clase (clasificación) o promedia su valor (regresión). No entrena ningún modelo: memoriza los datos, y el coste está en la predicción. Es sensible a la escala de las variables y a la maldición de la dimensionalidad.","cuando":"Con conjuntos pequeños o medianos y pocas variables, cuando los casos parecidos suelen tener resultados parecidos.","ej":"Estimar el alquiler de un piso promediando el de los 5 pisos más parecidos en tamaño, barrio y planta.","hp":[["n_neighbors","número de vecinos; pocos, predicción nerviosa; muchos, predicción suavizada"],["weights","si los vecinos cercanos pesan más (distance) o todos igual (uniform)"],["metric","distancia con la que se mide el parecido"]],"py":[{"c":"sklearn.neighbors.KNeighborsClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html"},{"c":"sklearn.neighbors.KNeighborsRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html"}],"rel":["distancia-y-similitud","escalado-de-variables","maldicion-de-la-dimensionalidad","busqueda-por-similitud"]},{"id":"arboles-de-decision","name":"Árboles de decisión","en":"decision trees","frase":"Una cadena de preguntas sí/no que termina en una predicción.","desc":"Dividen el espacio de las variables con preguntas sucesivas del tipo \"¿x₃ > 5?\" hasta llegar a hojas que dan la predicción. Se leen como un diagrama de flujo, captan no linealidades e interacciones y no necesitan escalar los datos. Su punto débil es la inestabilidad, porque pequeños cambios en los datos cambian mucho el árbol, y la tendencia a sobreajustar si crece demasiado.","cuando":"Cuando necesitas reglas fáciles de explicar, o como pieza base de ensembles como Random Forest y gradient boosting.","ej":"Triaje en urgencias: \"¿fiebre > 39 °C?\" → sí → \"¿dificultad para respirar?\" → sí → prioridad alta.","hp":[["max_depth","profundidad máxima; limita la complejidad del árbol"],["min_samples_leaf","mínimo de ejemplos por hoja; suaviza las predicciones"],["criterion","medida de impureza para elegir las divisiones (gini, entropy)"]],"py":[{"c":"sklearn.tree.DecisionTreeClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html"},{"c":"sklearn.tree.DecisionTreeRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html"},{"c":"sklearn.tree.plot_tree","u":"https://scikit-learn.org/stable/modules/generated/sklearn.tree.plot_tree.html"}],"rel":["criterios-de-division","poda-y-criterios-de-parada","random-forest","gradient-boosting"],"children":[{"id":"criterios-de-division","name":"Criterios de división: Gini y entropía","en":"split criteria: Gini impurity & entropy","frase":"Cómo elige el árbol la mejor pregunta: la que deja los grupos más puros.","desc":"En cada nodo, el árbol elige la variable y el umbral que dejan los grupos resultantes lo más puros posible. En clasificación, la impureza se mide con el índice de Gini (la probabilidad de clasificar mal un elemento al azar) o con la entropía; la ganancia de información es cuánto reduce la entropía una división. En regresión se usa la reducción de la varianza (MSE).","ej":"Un nodo con un 50 % de cada clase tiene un Gini de 0,5. Si una división lo parte en dos nodos 90/10, cada uno baja a 0,18.","py":[{"c":"sklearn.tree.DecisionTreeClassifier(criterion=\"gini\" | \"entropy\")","u":"https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html"}],"rel":["arboles-de-decision","entropia","informacion-mutua"]},{"id":"poda-y-criterios-de-parada","name":"Poda y criterios de parada","en":"pruning & stopping criteria","frase":"Frenar o recortar el crecimiento del árbol para que no memorice el ruido.","desc":"Un árbol que crece sin límite acaba con casi una hoja por ejemplo y memoriza el ruido. Se evita parando antes (profundidad máxima, mínimo de muestras por hoja o mejora mínima exigida) o podando después: se construye el árbol completo y se quitan las ramas que no mejoran la validación, por ejemplo con la poda por coste-complejidad.","cuando":"Siempre que entrenes un árbol individual, para controlar el sobreajuste.","ej":"Limitar la profundidad a 4 baja algo el acierto en entrenamiento, pero a menudo mejora el de test.","hp":[["ccp_alpha","intensidad de la poda por coste-complejidad"],["max_depth","profundidad máxima del árbol"],["min_samples_split","mínimo de ejemplos para dividir un nodo"]],"py":[{"c":"sklearn.tree.DecisionTreeClassifier(max_depth=…, min_samples_leaf=…, ccp_alpha=…)","u":"https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html"}],"rel":["arboles-de-decision","sobreajuste","compromiso-sesgo-varianza"]}]},{"id":"metodos-kernel","name":"Métodos kernel","en":"kernel methods","frase":"Resolver problemas no lineales con herramientas lineales trabajando con similitudes entre puntos.","desc":"Familia de métodos que trabajan con similitudes entre pares de puntos, llamadas kernels, en lugar de con las variables originales. Equivale a proyectar los datos a un espacio de muchas más dimensiones, donde un problema no lineal se vuelve lineal, sin llegar a calcular esa proyección. Aquí entran las SVM, las SVR, la kernel ridge regression y los procesos gaussianos.","cuando":"Con conjuntos pequeños o medianos y fronteras no lineales, cuando no hay datos suficientes para una red neuronal.","ej":"Dos clases dispuestas en círculos concéntricos no se separan con una recta, pero un kernel RBF las separa sin problema.","py":[{"c":"sklearn.metrics.pairwise.rbf_kernel","u":"https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.rbf_kernel.html"}],"rel":["truco-del-kernel","svm","procesos-gaussianos","hsic"],"children":[{"id":"truco-del-kernel","name":"Truco del kernel","en":"kernel trick","frase":"Calcular similitudes como si los datos vivieran en un espacio enorme, sin construirlo.","desc":"Muchos algoritmos solo necesitan productos escalares entre puntos. Si se sustituyen por una función kernel k(x, x′), el resultado es el mismo que si los datos se hubieran transformado a un espacio de mayor dimensión, pero sin construir esa transformación. Los kernels más comunes son el lineal, el polinómico y el RBF (gaussiano).","ej":"El kernel RBF mide la similitud como exp(−γ‖x−x′‖²), lo que equivale a trabajar en un espacio de dimensión infinita.","py":[{"c":"sklearn.svm.SVC(kernel=\"rbf\")","u":"https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html"}],"rel":["metodos-kernel","svm","distancia-euclidea"]},{"id":"svm","name":"Máquinas de vectores soporte (SVM)","en":"support vector machines","frase":"Separa las clases con la frontera de máximo margen.","desc":"Clasificador que busca el hiperplano que separa las clases con el máximo margen, es decir, lo más lejos posible de los puntos más cercanos de cada clase (los vectores soporte). Con margen blando, controlado por el parámetro C, tolera algunos errores, y con kernels traza fronteras no lineales. Rinde muy bien con conjuntos medianos y de alta dimensión.","cuando":"Para clasificar conjuntos pequeños o medianos, incluso con muchísimas variables, como textos o datos genómicos.","ej":"Clasificar noticias en deportes o política a partir de miles de variables TF-IDF fue durante años terreno clásico de las SVM lineales.","hp":[["C","cuánto se penalizan los errores; alto, frontera más pegada a los datos"],["kernel","forma de la frontera (linear, rbf, poly)"],["gamma","alcance de cada punto en el kernel RBF; alto, frontera más irregular"]],"py":[{"c":"sklearn.svm.SVC","u":"https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html"},{"c":"sklearn.svm.LinearSVC","u":"https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html"}],"rel":["truco-del-kernel","svr","regresion-logistica","tf-idf"]},{"id":"svr","name":"Regresión de vectores soporte (SVR)","en":"support vector regression","frase":"Regresión que ignora los errores pequeños y penaliza solo los grandes.","desc":"Versión de las SVM para regresión. Ajusta una función que deja la mayoría de los puntos dentro de un tubo de anchura ε alrededor de la predicción y solo penaliza los que quedan fuera. Ignorar los errores pequeños la hace robusta al ruido, y con kernels capta relaciones no lineales.","cuando":"Para regresión no lineal con conjuntos pequeños o medianos y datos con ruido moderado.","ej":"Predecir la demanda horaria de un servicio de bicicletas con un kernel RBF, sin penalizar desviaciones menores de 5 bicis (ε = 5).","hp":[["C","cuánto se penalizan los errores fuera del tubo"],["epsilon","anchura del tubo de errores tolerados"],["kernel","forma de la función (linear, rbf, poly)"],["gamma","alcance de cada punto en el kernel RBF"]],"py":[{"c":"sklearn.svm.SVR","u":"https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html"}],"rel":["svm","truco-del-kernel","kernel-ridge-regression"]},{"id":"kernel-ridge-regression","name":"Kernel ridge regression","en":"kernel ridge regression","frase":"Regresión Ridge con kernels: no lineal y con solución exacta.","desc":"Combina la regresión Ridge con el truco del kernel: una regresión lineal regularizada en el espacio que induce el kernel, con solución cerrada. Su predicción coincide con la media de un proceso gaussiano equivalente, pero no da incertidumbre. En conjuntos medianos suele entrenar más rápido que una SVR.","cuando":"Para regresión no lineal y suave con hasta unos pocos miles de datos.","ej":"Ajustar una curva suave y no lineal a 2.000 medidas de un sensor con un kernel RBF y una sola línea de código.","hp":[["alpha","fuerza de la regularización"],["kernel","tipo de kernel (rbf, polynomial, linear)"],["gamma","alcance del kernel"]],"py":[{"c":"sklearn.kernel_ridge.KernelRidge","u":"https://scikit-learn.org/stable/modules/generated/sklearn.kernel_ridge.KernelRidge.html"}],"rel":["ridge-lasso-y-elastic-net","truco-del-kernel","procesos-gaussianos","svr"]},{"id":"procesos-gaussianos","name":"Procesos gaussianos (GP)","en":"Gaussian processes","frase":"Predicciones acompañadas de su incertidumbre, modelando una distribución sobre funciones.","desc":"Modelo bayesiano no paramétrico que define una distribución sobre funciones: cualquier conjunto de puntos sigue una normal multivariante cuya covarianza la marca un kernel. Al condicionar en los datos, cada predicción nueva sale acompañada de su incertidumbre. Escala mal con muchos datos, porque su coste crece con el cubo de n.","cuando":"Cuando tienes pocos datos y necesitas saber cuánto fiarte de cada predicción, como en la optimización bayesiana o en experimentos caros.","ej":"En la optimización bayesiana de hiperparámetros, un GP modela el rendimiento del modelo en función de los hiperparámetros y propone dónde probar a continuación.","hp":[["kernel","forma de la covarianza (RBF, Matern o periódico)"],["alpha","ruido supuesto en las observaciones"],["n_restarts_optimizer","reinicios al ajustar los parámetros del kernel"]],"py":[{"c":"sklearn.gaussian_process.GaussianProcessRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html"}],"rel":["metodos-kernel","kernel-ridge-regression","optimizacion-bayesiana-de-hiperparametros","incertidumbre"]}]},{"id":"ensembles","name":"Ensembles","en":"ensemble methods","frase":"Combinar varios modelos para que juntos acierten más que cada uno.","desc":"Combinan varios modelos para lograr predicciones más precisas y estables que las de cualquiera de ellos por separado. Hay tres estrategias principales. El bagging entrena modelos en paralelo sobre remuestreos y promedia, y reduce la varianza. El boosting entrena en secuencia corrigiendo errores, y reduce el sesgo. El stacking aprende cómo combinar los modelos.","cuando":"Cuando quieres exprimir el rendimiento o estabilizar un modelo inestable; con datos tabulares son la opción más competitiva.","ej":"En las competiciones de Kaggle con datos tabulares, las soluciones ganadoras suelen ser ensembles de varios modelos de gradient boosting.","py":[{"c":"sklearn.ensemble","u":"https://scikit-learn.org/stable/api/sklearn.ensemble.html"}],"rel":["bagging","boosting","stacking","por-que-funcionan-los-ensembles"],"children":[{"id":"por-que-funcionan-los-ensembles","name":"Por qué funcionan los ensembles","en":"why ensembles work","frase":"Si los modelos se equivocan de forma distinta, al combinarlos los errores se compensan.","desc":"Si los modelos se equivocan de forma distinta, con errores poco correlacionados, al combinarlos esos errores se compensan: baja la varianza del promedio y el voto mayoritario acierta más que cada miembro. Por eso la diversidad (distintos datos, variables o algoritmos) importa tanto como la calidad individual.","ej":"Cinco clasificadores independientes que aciertan un 70 % cada uno llegan a cerca de un 84 % votando por mayoría.","rel":["compromiso-sesgo-varianza","bagging","combinacion-por-votacion"]},{"id":"combinacion-por-votacion","name":"Combinación por votación (mayoría, Borda, BKS)","en":"voting: majority, Borda count, BKS","frase":"Cada modelo vota una clase y gana la opción más respaldada.","desc":"Formas de combinar las etiquetas que predicen varios clasificadores. En el voto por mayoría gana la clase más votada, y el voto puede ponderarse según la calidad de cada modelo. En el recuento de Borda cada modelo ordena las clases y se suman puntos según la posición. El Behavior Knowledge Space (BKS) asigna, con una tabla aprendida en entrenamiento, la clase real más frecuente a cada combinación de votos.","cuando":"Cuando ya tienes varios clasificadores razonables y diversos y quieres combinarlos de la forma más sencilla.","ej":"Tres modelos votan \"gato\", \"gato\" y \"perro\": por mayoría, la predicción final es \"gato\".","hp":[["voting","hard (vota la etiqueta) o soft (promedia las probabilidades)"],["weights","peso de cada modelo en la votación"]],"py":[{"c":"sklearn.ensemble.VotingClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingClassifier.html"}],"rel":["combinadores-algebraicos","stacking","ensembles"]},{"id":"combinadores-algebraicos","name":"Combinadores algebraicos","en":"algebraic combiners","frase":"Promediar, multiplicar o tomar la mediana de las probabilidades de varios modelos.","desc":"Combinan las salidas continuas de los modelos, como probabilidades o puntuaciones, con una operación algebraica: media, media ponderada, mediana, máximo, mínimo o producto. La media es robusta y casi siempre funciona bien. El producto castiga mucho a cualquier modelo muy seguro de que la clase es incorrecta, y la mediana resiste a los modelos atípicos.","cuando":"Cuando los modelos dan probabilidades o puntuaciones y quieres combinarlas sin entrenar nada más.","ej":"Promediar las probabilidades de fraude de tres modelos (0,9, 0,6 y 0,7) da 0,73, que después se compara con el umbral.","hp":[["weights","peso de cada modelo en la media"]],"py":[{"c":"sklearn.ensemble.VotingClassifier(voting=\"soft\")","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingClassifier.html"}],"rel":["combinacion-por-votacion","stacking","ensembles"]},{"id":"stacking","name":"Stacking","en":"stacked generalization","frase":"Un metamodelo aprende a combinar las predicciones de otros modelos.","desc":"También llamado generalización apilada. Entrena varios modelos base y, encima, un metamodelo que aprende a combinar sus predicciones. Para que el metamodelo no aprenda de predicciones sobreajustadas, se entrena con predicciones fuera de muestra obtenidas por validación cruzada. Suele aportar mejoras pequeñas a cambio de más complejidad.","cuando":"Cuando tienes modelos diversos con rendimientos parecidos y quieres sacar la última mejora de precisión.","ej":"Combinar un Random Forest, un XGBoost y una red neuronal mediante una regresión logística que aprende cuánto fiarse de cada uno.","hp":[["final_estimator","el metamodelo que combina las predicciones"],["cv","cómo se generan las predicciones fuera de muestra"],["passthrough","si el metamodelo ve también las variables originales"]],"py":[{"c":"sklearn.ensemble.StackingClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.StackingClassifier.html"},{"c":"sklearn.ensemble.StackingRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.StackingRegressor.html"}],"rel":["combinacion-por-votacion","validacion-cruzada","mezcla-de-expertos","fuga-de-datos"]},{"id":"mezcla-de-expertos","name":"Mezcla de expertos (MoE)","en":"mixture of experts","frase":"Expertos especializados y una compuerta que decide a cuál escuchar en cada caso.","desc":"Varios modelos expertos se especializan en distintas regiones del espacio de entrada, y una red de compuerta (gating) decide cuánto pesa cada uno para cada entrada concreta. A diferencia de un voto fijo, la combinación depende de la entrada. Hoy es una pieza clave de muchos LLMs: en cada capa solo se activan unos pocos expertos por token, lo que permite modelos enormes con un coste de cómputo moderado.","cuando":"Cuando los datos tienen regímenes muy distintos y conviene especializar un modelo en cada uno; en los LLMs, para crecer sin multiplicar el cómputo.","ej":"Mixtral 8x7B tiene 8 expertos por capa y activa 2 en cada token, de modo que solo usa una fracción de sus parámetros en cada paso.","rel":["stacking","ensembles","llm"]},{"id":"bagging","name":"Bagging","en":"bootstrap aggregating","frase":"Muchos modelos entrenados con remuestreos de los datos y promediados.","desc":"Abreviatura de bootstrap aggregating. Entrena muchos modelos del mismo tipo, cada uno con una muestra bootstrap (con reemplazo) de los datos, y promedia o vota sus predicciones. Reduce sobre todo la varianza, por eso funciona muy bien con modelos inestables como los árboles profundos. Los ejemplos que no entran en cada muestra (out-of-bag) permiten estimar el error sin un conjunto de validación aparte.","cuando":"Cuando tu modelo base es potente pero inestable, como un árbol profundo, y quieres reducir su varianza.","ej":"Entrenar 100 árboles de regresión, cada uno con un remuestreo distinto de los datos, y promediar sus predicciones del precio de una casa.","hp":[["n_estimators","número de modelos"],["max_samples","tamaño de cada remuestreo"],["max_features","fracción de variables que ve cada modelo"]],"py":[{"c":"sklearn.ensemble.BaggingClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.BaggingClassifier.html"},{"c":"sklearn.ensemble.BaggingRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.BaggingRegressor.html"}],"rel":["random-forest","por-que-funcionan-los-ensembles","compromiso-sesgo-varianza","arboles-de-decision"]},{"id":"random-forest","name":"Random Forest","en":"random forest","frase":"Muchos árboles distintos que votan: más estable y preciso que uno solo.","desc":"Bagging de árboles de decisión con un ingrediente extra: en cada división el árbol solo puede elegir entre un subconjunto aleatorio de variables. Eso hace que los árboles se parezcan menos entre sí y que el promedio sea más eficaz. Es robusto, necesita poco ajuste y ofrece de serie una estimación del error (out-of-bag) y de la importancia de cada variable.","cuando":"Como primera opción robusta con datos tabulares, cuando quieres buen rendimiento con muy poco ajuste.","ej":"Clasificar los usos del suelo (cultivo, bosque, ciudad) en imágenes de satélite con 500 árboles, cada uno entrenado con datos y variables distintos.","hp":[["n_estimators","número de árboles; más árboles estabilizan el resultado a cambio de tiempo"],["max_features","variables candidatas en cada división; cuantas menos, más distintos son los árboles"],["max_depth","profundidad máxima de cada árbol"],["min_samples_leaf","mínimo de ejemplos por hoja; suaviza las predicciones"]],"py":[{"c":"sklearn.ensemble.RandomForestClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html"},{"c":"sklearn.ensemble.RandomForestRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html"}],"rel":["bagging","arboles-de-decision","importancia-por-permutacion","gradient-boosting"]},{"id":"boosting","name":"Boosting","en":"boosting","frase":"Modelos débiles en cadena, cada uno corrigiendo los errores del anterior.","desc":"Construye el ensemble en secuencia: cada nuevo modelo débil, normalmente un árbol pequeño, se centra en los errores de los anteriores, y la predicción final es una suma ponderada de todos. Reduce sobre todo el sesgo. Es la familia más potente para datos tabulares, aunque más sensible al ruido y a los hiperparámetros que el bagging.","cuando":"Cuando buscas la máxima precisión con datos tabulares y puedes dedicar tiempo a ajustar hiperparámetros.","ej":"Cada árbol nuevo corrige un poco lo que los anteriores predijeron mal, hasta sumar cientos de árboles pequeños que juntos son muy precisos.","hp":[["max_iter","número de árboles (iteraciones)"],["learning_rate","cuánto aporta cada árbol"],["max_leaf_nodes","tamaño de cada árbol"]],"py":[{"c":"sklearn.ensemble.HistGradientBoostingClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html"}],"rel":["adaboost","gradient-boosting","xgboost-y-lightgbm","bagging"],"children":[{"id":"adaboost","name":"AdaBoost","en":"adaptive boosting","frase":"Boosting que da más peso, en cada ronda, a los ejemplos mal clasificados.","desc":"Adaptive Boosting, propuesto por Freund y Schapire. Entrena clasificadores débiles en secuencia y, tras cada uno, sube el peso de los ejemplos mal clasificados para que el siguiente se fije más en ellos. Cada clasificador recibe un peso según su error, y la predicción final es un voto ponderado. Equivale a minimizar una pérdida exponencial.","cuando":"Con clasificadores débiles muy simples y datos poco ruidosos, cuando quieres un boosting clásico y ligero.","ej":"En el detector de caras de Viola-Jones, AdaBoost combina miles de rasgos muy simples, cada uno apenas mejor que el azar, en un detector rápido y preciso.","hp":[["n_estimators","número de clasificadores débiles"],["learning_rate","cuánto aporta cada uno"],["estimator","el modelo débil (por defecto, un árbol de un solo nivel)"]],"py":[{"c":"sklearn.ensemble.AdaBoostClassifier","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html"},{"c":"sklearn.ensemble.AdaBoostRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html"}],"rel":["boosting","gradient-boosting","combinacion-por-votacion"]},{"id":"gradient-boosting","name":"Gradient Boosting","en":"gradient boosting","frase":"Cada árbol nuevo corrige el error que dejan los anteriores, como un descenso por gradiente.","desc":"Generaliza el boosting a cualquier función de pérdida diferenciable. Cada árbol nuevo se ajusta al gradiente negativo de la pérdida (con MSE, simplemente a los residuos) y se suma al modelo multiplicado por una tasa de aprendizaje pequeña. Es, en esencia, descenso por gradiente en el espacio de funciones.","cuando":"Con datos tabulares cuando necesitas la máxima precisión, para regresión, clasificación o ranking.","ej":"Predecir el tiempo de entrega de un pedido: el primer árbol da una estimación gruesa y cada uno de los 300 siguientes corrige parte del error que queda.","hp":[["n_estimators","número de árboles"],["learning_rate","tamaño de cada paso; más bajo, más árboles y mejor generalización"],["max_depth","profundidad de cada árbol"],["subsample","fracción de datos por árbol; por debajo de 1 añade aleatoriedad y regulariza"]],"py":[{"c":"sklearn.ensemble.GradientBoostingRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html"},{"c":"sklearn.ensemble.HistGradientBoostingRegressor","u":"https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingRegressor.html"}],"rel":["boosting","xgboost-y-lightgbm","descenso-por-gradiente","learning-rate"]},{"id":"xgboost-y-lightgbm","name":"XGBoost y LightGBM","en":"XGBoost & LightGBM","frase":"Gradient boosting industrial: rápido, escalable y estándar con datos tabulares.","desc":"Implementaciones muy optimizadas de gradient boosting y estándar de facto con datos tabulares. XGBoost añade regularización en los árboles, manejo nativo de valores faltantes y paralelización. LightGBM acelera el entrenamiento agrupando las variables en histogramas y haciendo crecer los árboles hoja a hoja. CatBoost, una tercera opción, destaca con variables categóricas.","cuando":"Con datos tabulares medianos o grandes, cuando quieres el mejor rendimiento en un tiempo de entrenamiento razonable.","ej":"Predecir qué usuarios harán clic en un anuncio a partir de millones de registros y cientos de variables, con un entrenamiento de minutos en LightGBM.","hp":[["n_estimators","número de árboles"],["learning_rate","tamaño del paso de cada árbol"],["max_depth / num_leaves","tamaño de cada árbol (en XGBoost / en LightGBM)"],["subsample / colsample_bytree","fracción de filas / de columnas que ve cada árbol"],["reg_lambda","regularización L2 de las hojas"]],"py":[{"c":"xgboost.XGBClassifier","u":"https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBClassifier"},{"c":"lightgbm.LGBMClassifier","u":"https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.LGBMClassifier.html"}],"rel":["gradient-boosting","valores-faltantes-e-imputacion","shap","codificacion-de-variables-categoricas"]}]}]}]},{"id":"aprendizaje-no-supervisado","name":"Aprendizaje no supervisado","en":"unsupervised learning","frase":"Descubrir estructura en datos sin etiquetas: grupos, dimensiones ocultas o densidades.","desc":"Aprender la estructura de los datos sin etiquetas. Agrupa casos parecidos (clustering), comprime muchas variables en pocas (reducción de dimensionalidad) o estima cómo se distribuyen los datos (densidad). Las etiquetas son caras y los datos sin etiquetar abundan, así que resulta clave para explorar y para preparar otros modelos.","cuando":"Cuando no tienes etiquetas y quieres explorar los datos, agruparlos, resumirlos o prepararlos para otro modelo.","ej":"Segmentar a los clientes de una tienda online en grupos con hábitos de compra parecidos sin decirle al algoritmo qué grupos buscar.","rel":["clustering","reduccion-de-la-dimensionalidad","estimacion-de-densidad","aprendizaje-autosupervisado"],"children":[{"id":"reduccion-de-la-dimensionalidad","name":"Reducción de la dimensionalidad","children":[{"id":"maldicion-de-la-dimensionalidad","name":"Maldición de la dimensionalidad"},{"id":"seleccion-de-caracteristicas","name":"Selección de características","children":[{"id":"metodos-filtro","name":"Métodos filtro (filter)"},{"id":"metodos-envoltorio","name":"Métodos envoltorio (wrapper)"},{"id":"metodos-integrados","name":"Métodos integrados (embedded)"}]},{"id":"extraccion-de-caracteristicas","name":"Extracción de características"},{"id":"pca","name":"PCA (análisis de componentes principales)"},{"id":"ica","name":"ICA (análisis de componentes independientes)"},{"id":"lda","name":"LDA (análisis discriminante lineal)"},{"id":"mds","name":"MDS (escalado multidimensional)"},{"id":"manifold-learning","name":"Aprendizaje de variedades (manifold learning)","children":[{"id":"lle-y-pca-local","name":"LLE y PCA local"},{"id":"isomap","name":"Isomap"},{"id":"t-sne","name":"t-SNE"},{"id":"umap","name":"UMAP"},{"id":"curvas-principales","name":"Curvas principales"}]}]},{"id":"clustering","name":"Clustering","children":[{"id":"clustering-basado-en-centroides","name":"Clustering basado en centroides","children":[{"id":"k-means","name":"k-means"},{"id":"k-medoids-y-k-median","name":"k-medoids y k-median"},{"id":"cuantizacion-vectorial","name":"Cuantización vectorial (VQ)"}]},{"id":"clustering-jerarquico","name":"Clustering jerárquico","children":[{"id":"dendrograma","name":"Dendrograma"},{"id":"criterios-de-enlace","name":"Criterios de enlace (linkage)"}]},{"id":"clustering-basado-en-densidad","name":"Clustering basado en densidad","children":[{"id":"dbscan","name":"DBSCAN"},{"id":"mean-shift","name":"Mean Shift"}]},{"id":"spectral-clustering","name":"Spectral clustering"},{"id":"gmm","name":"Modelos de mezcla gaussiana (GMM)"},{"id":"metodo-del-codo","name":"Elección del número de clusters (método del codo)"},{"id":"evaluacion-del-clustering","name":"Evaluación del clustering","children":[{"id":"coeficiente-de-silueta","name":"Coeficiente de silueta"},{"id":"indice-de-calinski-harabasz","name":"Índice de Calinski-Harabasz"},{"id":"indice-de-davies-bouldin","name":"Índice de Davies-Bouldin"}]}]},{"id":"estimacion-de-densidad","name":"Estimación de densidad","children":[{"id":"histograma","name":"Histograma"},{"id":"kde","name":"Estimación kernel de densidad (KDE / ventanas de Parzen)"}]}]},{"id":"redes-neuronales","name":"Redes neuronales: cómo aprenden","en":"neural networks: how they learn","frase":"Cómo una red ajusta millones de pesos para reducir su error, paso a paso.","desc":"Cómo aprende una red neuronal. Las neuronas combinan sus entradas con pesos y aplican una activación no lineal; una función de pérdida mide el error, y un optimizador ajusta millones de pesos mediante descenso por gradiente y retropropagación. Incluye también la regularización y los trucos prácticos que hacen que el entrenamiento funcione.","cuando":"Cuando los datos son complejos (imágenes, texto, audio) o muy abundantes y los modelos clásicos se quedan cortos.","ej":"Entrenar un MLP para reconocer dígitos escritos a mano: en cada época la red ve todas las imágenes, calcula su error y corrige un poco los pesos en la dirección que lo reduce.","py":[{"c":"keras.Sequential","u":"https://keras.io/api/models/sequential/"},{"c":"torch.nn.Module","u":"https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html"}],"rel":["mlp","descenso-por-gradiente","backpropagation","arquitecturas-de-redes-neuronales"],"children":[{"id":"neurona-artificial","name":"Neurona biológica y neurona artificial"},{"id":"perceptron","name":"Perceptrón"},{"id":"mlp","name":"Perceptrón multicapa (MLP)"},{"id":"funciones-de-activacion","name":"Funciones de activación","children":[{"id":"sigmoide-y-tanh","name":"Sigmoide y tanh"},{"id":"relu-y-variantes","name":"ReLU y variantes (Leaky ReLU, ELU)"},{"id":"gelu","name":"GELU"},{"id":"softmax","name":"Softmax"}]},{"id":"funciones-de-perdida","name":"Funciones de pérdida","children":[{"id":"perdidas-de-regresion","name":"Pérdidas de regresión (MSE, MAE, Huber)"},{"id":"entropia-cruzada","name":"Entropía cruzada (binaria y categórica)"},{"id":"perdidas-perceptuales","name":"Pérdidas perceptuales"}]},{"id":"optimizacion","name":"Optimización","children":[{"id":"descenso-por-gradiente","name":"Descenso por gradiente"},{"id":"backpropagation","name":"Retropropagación (backpropagation)"},{"id":"diferenciacion-automatica","name":"Diferenciación automática"},{"id":"batch-mini-batch-y-sgd","name":"Batch, mini-batch y SGD"},{"id":"epoca-y-tamano-de-lote","name":"Época y tamaño de lote"},{"id":"learning-rate","name":"Tasa de aprendizaje (learning rate)"},{"id":"lr-schedulers","name":"Programación de la tasa de aprendizaje"},{"id":"momentum","name":"Momentum"},{"id":"rmsprop-y-adagrad","name":"RMSprop y Adagrad"},{"id":"adam-y-adamw","name":"Adam y AdamW"},{"id":"metodos-de-segundo-orden","name":"Métodos de segundo orden (Newton)"},{"id":"inicializacion-de-pesos","name":"Inicialización de pesos"},{"id":"desvanecimiento-y-explosion-del-gradiente","name":"Desvanecimiento y explosión del gradiente"}]},{"id":"regularizacion-en-redes","name":"Regularización en redes","children":[{"id":"penalizacion-l1-y-l2","name":"Penalización L1 y L2 (weight decay)"},{"id":"dropout","name":"Dropout"},{"id":"early-stopping","name":"Early stopping"},{"id":"inyeccion-de-ruido","name":"Inyección de ruido"}]},{"id":"entrenamiento-en-la-practica","name":"Entrenamiento en la práctica","children":[{"id":"receta-de-entrenamiento","name":"Receta de entrenamiento"},{"id":"curvas-de-aprendizaje","name":"Curvas de aprendizaje"},{"id":"callbacks","name":"Callbacks"},{"id":"reproducibilidad-y-semillas","name":"Reproducibilidad y semillas"}]},{"id":"construccion-de-modelos","name":"Construcción de modelos","children":[{"id":"api-secuencial","name":"API secuencial"},{"id":"api-funcional","name":"API funcional"},{"id":"capas-y-perdidas-personalizadas","name":"Capas y pérdidas personalizadas"},{"id":"redes-siamesas","name":"Redes siamesas (pesos compartidos)"},{"id":"multi-entrada-salida","name":"Modelos multi-entrada y multi-salida"}]}]},{"id":"arquitecturas-de-redes-neuronales","name":"Arquitecturas de redes neuronales","en":"neural network architectures","frase":"Las formas de red adaptadas a cada tipo de dato: imágenes, secuencias o texto.","desc":"Las formas que puede tomar una red según el tipo de dato. Las CNN aprovechan la estructura espacial de las imágenes y las RNN la secuencial del texto o las series. Los Transformers relacionan todos los elementos entre sí mediante atención, y los autoencoders comprimen y reconstruyen. Cada arquitectura incorpora un sesgo inductivo distinto.","ej":"Para clasificar imágenes se suele usar una CNN o un Vision Transformer; para traducir texto, un Transformer encoder-decoder.","rel":["cnn","rnn","atencion-y-transformers","autoencoders"],"children":[{"id":"bloques-comunes","name":"Bloques comunes","children":[{"id":"conexion-residual","name":"Conexión residual (skip connection)"},{"id":"capas-de-normalizacion","name":"Capas de normalización (batch, layer, group)"},{"id":"capa-de-embedding","name":"Capa de embedding"}]},{"id":"cnn","name":"Redes convolucionales (CNN)","children":[{"id":"convolucion","name":"Convolución"},{"id":"filtros-y-mapas-de-caracteristicas","name":"Filtros y mapas de características"},{"id":"padding-y-stride","name":"Padding y stride"},{"id":"pooling","name":"Pooling"},{"id":"campo-receptivo","name":"Campo receptivo"},{"id":"equivarianza-e-invarianza","name":"Equivarianza e invarianza"},{"id":"convolucion-1d","name":"Convolución 1D"},{"id":"convolucion-separable","name":"Convolución separable"},{"id":"convolucion-transpuesta","name":"Convolución transpuesta (upsampling)"},{"id":"inspiracion-biologica-de-las-cnn","name":"Inspiración biológica de las CNN"}]},{"id":"rnn","name":"Redes recurrentes (RNN)","children":[{"id":"estado-oculto-y-memoria","name":"Estado oculto y memoria"},{"id":"bptt","name":"Retropropagación a través del tiempo (BPTT)"},{"id":"lstm","name":"LSTM"},{"id":"gru","name":"GRU"},{"id":"rnn-bidireccional","name":"RNN bidireccional"},{"id":"echo-state-networks","name":"Echo State Networks (reservoir computing)"},{"id":"rnn-clasicas","name":"RNN clásicas: Hopfield, Elman y Jordan"},{"id":"topologias-de-secuencia","name":"Topologías de secuencia (one-to-many, many-to-one, many-to-many)"}]},{"id":"atencion-y-transformers","name":"Atención y Transformers","children":[{"id":"mecanismo-de-atencion","name":"Mecanismo de atención"},{"id":"query-key-y-value","name":"Query, Key y Value"},{"id":"atencion-por-producto-escalar-escalado","name":"Atención por producto escalar escalado"},{"id":"autoatencion","name":"Autoatención (self-attention)"},{"id":"atencion-multicabeza","name":"Atención multicabeza"},{"id":"atencion-cruzada","name":"Atención cruzada"},{"id":"mascara-causal","name":"Máscara causal"},{"id":"codificacion-posicional","name":"Codificación posicional"},{"id":"bloque-transformer","name":"Bloque Transformer"},{"id":"tipos-de-transformer","name":"Encoder, decoder y encoder-decoder"},{"id":"token-cls","name":"Token [CLS]"},{"id":"transformers-vs-cnn-y-rnn","name":"Transformers vs CNN y RNN"}]},{"id":"autoencoders","name":"Autoencoders","children":[{"id":"cuello-de-botella","name":"Encoder, decoder y cuello de botella"},{"id":"autoencoder-undercomplete","name":"Autoencoder undercomplete"},{"id":"autoencoder-sparse","name":"Autoencoder sparse"},{"id":"autoencoder-denoising","name":"Autoencoder denoising"},{"id":"autoencoder-convolucional","name":"Autoencoder convolucional"},{"id":"autoencoder-contractivo","name":"Autoencoder contractivo"}]},{"id":"modelos-bioinspirados-y-multiescala","name":"Modelos bioinspirados y multiescala","children":[{"id":"gdn","name":"Normalización divisiva generalizada (GDN)"},{"id":"perceptnet","name":"PerceptNet"},{"id":"modelos-multiescala","name":"Modelos multiescala"}]}]},{"id":"representaciones-y-modelos-fundacionales","name":"Representaciones y modelos fundacionales","en":"representation learning & foundation models","frase":"Preentrenar una vez con muchos datos y reutilizar lo aprendido en muchas tareas.","desc":"El paradigma de preentrenar y adaptar. Un modelo aprende representaciones generales (embeddings) con enormes cantidades de datos, a menudo sin etiquetas gracias al aprendizaje autosupervisado. Después se reutiliza para muchas tareas mediante transfer learning o fine-tuning. Es la base de los modelos fundacionales.","cuando":"Cuando tienes pocos datos etiquetados y existe un modelo preentrenado con datos parecidos a los tuyos.","ej":"Reutilizar un modelo preentrenado con millones de imágenes para clasificar radiografías disponiendo solo de unos cientos de ejemplos etiquetados.","rel":["embeddings","aprendizaje-autosupervisado","transfer-learning","que-es-un-modelo-fundacional"],"children":[{"id":"aprendizaje-de-representaciones","name":"Aprendizaje de representaciones"},{"id":"embeddings","name":"Embeddings","children":[{"id":"espacio-latente","name":"Espacio latente"},{"id":"aritmetica-de-embeddings","name":"Aritmética de embeddings"},{"id":"busqueda-por-similitud","name":"Búsqueda por similitud"}]},{"id":"aprendizaje-autosupervisado","name":"Aprendizaje autosupervisado (SSL)","children":[{"id":"tarea-pretexto","name":"Tarea pretexto"},{"id":"aprendizaje-contrastivo","name":"Aprendizaje contrastivo","children":[{"id":"perdida-infonce","name":"Pérdida InfoNCE"},{"id":"simclr-moco-byol-y-dino","name":"SimCLR, MoCo, BYOL y DINO"}]},{"id":"modelado-enmascarado","name":"Modelado enmascarado (MAE, BEiT)"},{"id":"colapso-de-la-representacion","name":"Colapso de la representación"},{"id":"evaluacion-de-representaciones","name":"Evaluación de representaciones (linear probing, k-NN)"}]},{"id":"transfer-learning","name":"Aprendizaje por transferencia (transfer learning)","children":[{"id":"extractor-de-caracteristicas","name":"Modelo preentrenado como extractor de características"},{"id":"fine-tuning","name":"Ajuste fino (fine-tuning)"},{"id":"congelar-y-descongelar-capas","name":"Congelar y descongelar capas"},{"id":"learning-rates-discriminativos","name":"Learning rates discriminativos"},{"id":"adaptacion-de-dominio","name":"Adaptación de dominio"},{"id":"olvido-catastrofico","name":"Olvido catastrófico"},{"id":"destilacion-de-conocimiento","name":"Destilación de conocimiento"}]},{"id":"modelos-fundacionales","name":"Modelos fundacionales","children":[{"id":"que-es-un-modelo-fundacional","name":"Qué es un modelo fundacional"},{"id":"leyes-de-escalado","name":"Leyes de escalado (scaling laws)"}]}]},{"id":"ia-generativa","name":"IA generativa","en":"generative AI","frase":"Modelos que aprenden cómo son los datos para crear ejemplos nuevos y realistas.","desc":"Modelos que aprenden la distribución de los datos para generar ejemplos nuevos y realistas: imágenes, texto, audio o datos sintéticos. Las grandes familias son los modelos autorregresivos, los VAE, las GAN, los flujos normalizantes y los modelos de difusión. Cada una resuelve a su manera cómo modelar y muestrear una distribución de muy alta dimensión.","cuando":"Cuando necesitas crear contenido nuevo (imágenes, texto, audio) o datos sintéticos realistas.","ej":"Stable Diffusion genera una imagen a partir de una frase: parte de ruido aleatorio y lo va eliminando paso a paso.","rel":["modelo-generativo-vs-discriminativo","modelos-de-difusion","gan","vae"],"children":[{"id":"modelo-generativo-vs-discriminativo","name":"Modelo generativo vs discriminativo"},{"id":"densidad-explicita-vs-implicita","name":"Densidad explícita vs implícita"},{"id":"muestreo-por-transformada-inversa","name":"Muestreo por transformada inversa"},{"id":"modelos-autorregresivos","name":"Modelos autorregresivos","children":[{"id":"regla-de-la-cadena-probabilidad","name":"Factorización por regla de la cadena"},{"id":"generacion-con-rnn","name":"Generación con RNN"},{"id":"pixelcnn","name":"PixelCNN"},{"id":"perplejidad","name":"Perplejidad"}]},{"id":"vae","name":"Autoencoder variacional (VAE)","children":[{"id":"elbo","name":"ELBO"},{"id":"truco-de-reparametrizacion","name":"Truco de reparametrización"}]},{"id":"gan","name":"Redes generativas adversarias (GAN)","children":[{"id":"generador-y-discriminador","name":"Generador y discriminador (juego minimax)"},{"id":"colapso-de-modos","name":"Colapso de modos (mode collapse)"},{"id":"dcgan","name":"DCGAN"},{"id":"wasserstein-gan","name":"Wasserstein GAN (WGAN)"},{"id":"otras-variantes-de-gan","name":"Otras variantes de GAN"},{"id":"gan-condicional","name":"GAN condicional (cGAN)"},{"id":"pix2pix","name":"Pix2Pix"},{"id":"cyclegan","name":"CycleGAN"},{"id":"srgan","name":"SRGAN"}]},{"id":"normalizing-flows","name":"Flujos normalizantes (normalizing flows)","children":[{"id":"cambio-de-variable-y-jacobiano","name":"Cambio de variable y jacobiano"},{"id":"flujos-autorregresivos-y-de-acoplamiento","name":"Flujos autorregresivos y de acoplamiento (MAF, RealNVP, Glow)"},{"id":"descuantizacion","name":"Descuantización"},{"id":"rbig","name":"Gaussianización (RBIG)"},{"id":"flow-matching","name":"Flow Matching"},{"id":"rectified-flow","name":"Rectified Flow (ReFlow)"}]},{"id":"modelos-de-difusion","name":"Modelos de difusión","children":[{"id":"proceso-directo-e-inverso","name":"Proceso directo e inverso"},{"id":"el-denoiser-como-prior-implicito","name":"El denoiser como prior implícito"},{"id":"ddpm","name":"DDPM"},{"id":"ddim","name":"DDIM"},{"id":"planificacion-del-ruido","name":"Planificación del ruido (noise schedule)"},{"id":"guia-difusion","name":"Guía por clasificador y classifier-free guidance"},{"id":"stable-diffusion","name":"Difusión latente (Stable Diffusion)"},{"id":"controlnet","name":"ControlNet"},{"id":"dreambooth","name":"DreamBooth"},{"id":"destilacion-de-difusion","name":"Destilación de difusión (consistency models, SD Turbo)"},{"id":"difusion-de-video","name":"Difusión de vídeo"}]},{"id":"transferencia-de-estilo-neuronal","name":"Transferencia de estilo neuronal"},{"id":"superresolucion-inpainting-y-colorizacion","name":"Superresolución, inpainting y colorización"},{"id":"datos-sinteticos","name":"Datos sintéticos"},{"id":"evaluacion-de-modelos-generativos","name":"Evaluación de modelos generativos","children":[{"id":"evaluacion-cualitativa","name":"Evaluación cualitativa"},{"id":"inception-score","name":"Inception Score (IS)"},{"id":"fid-y-kid","name":"FID y KID"},{"id":"mode-drop-y-cobertura","name":"Mode drop y cobertura"},{"id":"verosimilitud-vs-calidad-de-muestras","name":"Verosimilitud vs calidad de muestras"}]}]},{"id":"lenguaje-y-llms","name":"Lenguaje y LLMs","en":"natural language processing & LLMs","frase":"Cómo las máquinas representan, entienden y generan lenguaje, hasta llegar a los LLMs.","desc":"Cómo representan y procesan el lenguaje las máquinas, desde la bolsa de palabras y los word embeddings hasta los grandes modelos de lenguaje (LLMs). Un LLM es un Transformer preentrenado para predecir el siguiente token y adaptado después (instruction tuning, RLHF) para seguir instrucciones y conversar.","cuando":"Cuando el problema gira en torno a texto: clasificarlo, extraer información, resumirlo, traducirlo o generarlo.","ej":"ChatGPT, Gemini o Claude son LLMs: modelos preentrenados con billones de tokens de texto y ajustados para seguir instrucciones.","rel":["tokenizacion","word-embeddings","llm","adaptacion-de-llms"],"children":[{"id":"nlp","name":"Procesamiento del lenguaje natural (NLP)","children":[{"id":"tareas-de-nlp","name":"Tareas de NLP"},{"id":"analisis-de-sentimiento","name":"Análisis de sentimiento"},{"id":"benchmarks-de-nlp","name":"Benchmarks de NLP (GLUE)"}]},{"id":"representacion-del-texto","name":"Representación del texto","children":[{"id":"preprocesado-de-texto","name":"Preprocesado de texto"},{"id":"bolsa-de-palabras","name":"One-hot y bolsa de palabras"},{"id":"tf-idf","name":"TF-IDF"},{"id":"tokenizacion","name":"Tokenización","children":[{"id":"tokenizacion-por-subpalabras","name":"Tokenización por subpalabras (BPE, WordPiece, SentencePiece)"},{"id":"vocabulario-y-tokens-especiales","name":"Vocabulario y tokens especiales"}]},{"id":"word-embeddings","name":"Word embeddings","children":[{"id":"word2vec","name":"Word2Vec (Skip-gram y CBOW)"},{"id":"negative-sampling","name":"Negative sampling"},{"id":"glove-y-swivel","name":"GloVe y Swivel"}]},{"id":"embeddings-estaticos-vs-contextuales","name":"Embeddings estáticos vs contextuales"},{"id":"modelos-de-embeddings-de-texto","name":"Modelos de embeddings de texto"}]},{"id":"modelos-de-lenguaje","name":"Modelos de lenguaje","children":[{"id":"modelo-de-lenguaje","name":"Modelo de lenguaje (predicción del siguiente token)"},{"id":"objetivos-de-preentrenamiento","name":"Objetivos de preentrenamiento","children":[{"id":"mlm","name":"Modelado de lenguaje enmascarado (MLM)"},{"id":"clm","name":"Modelado causal (CLM)"},{"id":"corrupcion-de-spans","name":"Corrupción de spans"}]},{"id":"bert","name":"Encoder-only: BERT"},{"id":"gpt","name":"Decoder-only: GPT"},{"id":"t5","name":"Encoder-decoder: T5"},{"id":"llm","name":"Gran modelo de lenguaje (LLM)"},{"id":"preentrenamiento-de-llms","name":"Preentrenamiento de LLMs"},{"id":"ventana-de-contexto","name":"Ventana de contexto"},{"id":"modelos-de-razonamiento","name":"Modelos de razonamiento"}]},{"id":"adaptacion-de-llms","name":"Adaptación de LLMs","children":[{"id":"sft","name":"Fine-tuning supervisado (SFT)"},{"id":"instruction-tuning","name":"Instruction tuning"},{"id":"fine-tuning-multitarea","name":"Fine-tuning multitarea"},{"id":"peft","name":"PEFT (fine-tuning eficiente)","children":[{"id":"lora","name":"LoRA"},{"id":"qlora","name":"QLoRA"},{"id":"prompt-tuning","name":"Prompt tuning"},{"id":"adapters","name":"Adapters"}]},{"id":"rlhf","name":"RLHF","children":[{"id":"modelo-de-recompensa","name":"Modelo de recompensa"},{"id":"ppo","name":"PPO"},{"id":"reward-hacking","name":"Reward hacking"},{"id":"rlaif","name":"RLAIF"}]},{"id":"dpo","name":"DPO"}]},{"id":"inferencia-y-eficiencia","name":"Inferencia y eficiencia","children":[{"id":"decodificacion-y-temperatura","name":"Decodificación y temperatura"},{"id":"cuantizacion","name":"Cuantización (GPTQ, AWQ, GGUF)"},{"id":"llms-locales-vs-api","name":"LLMs locales vs API"}]},{"id":"uso-de-llms","name":"Uso de LLMs","children":[{"id":"prompt-engineering","name":"Prompt engineering"},{"id":"in-context-learning","name":"Zero-shot, few-shot e in-context learning"},{"id":"chain-of-thought","name":"Chain-of-thought"},{"id":"plantillas-de-chat","name":"Plantillas de chat y prompt de sistema"},{"id":"salida-estructurada","name":"Salida estructurada"},{"id":"alucinaciones","name":"Alucinaciones"}]},{"id":"evaluacion-de-llms","name":"Evaluación de LLMs","children":[{"id":"benchmarks-y-saturacion","name":"Benchmarks y saturación"},{"id":"llm-as-a-judge","name":"LLM como juez (LLM-as-a-judge)"},{"id":"arenas-de-preferencia-humana","name":"Arenas de preferencia humana"}]}]},{"id":"rag-y-agentes","name":"RAG y agentes","en":"RAG & AI agents","frase":"Conectar un LLM con documentos y herramientas para que responda con fundamento y actúe.","desc":"Cómo convertir un LLM en un sistema útil y fiable. El RAG lo conecta con documentos externos: recupera los fragmentos relevantes y los añade al prompt para que la respuesta se apoye en ellos. Un agente da al LLM herramientas (buscar, ejecutar código, llamar a APIs) y un bucle en el que decide qué hacer en cada paso hasta completar la tarea.","cuando":"Cuando un LLM debe responder con información propia o actualizada, o completar tareas de varios pasos usando herramientas.","ej":"Un asistente que responde sobre la documentación interna de una empresa citando sus fuentes es un RAG. Si además puede abrir incidencias o enviar correos, es un agente.","rel":["rag","agentes-de-ia","alucinaciones","function-calling"],"children":[{"id":"rag","name":"RAG (generación aumentada por recuperación)","children":[{"id":"memoria-parametrica-vs-no-parametrica","name":"Memoria paramétrica vs no paramétrica"},{"id":"chunking","name":"Chunking"},{"id":"recuperacion-densa","name":"Recuperación densa (dual encoder)"},{"id":"bases-de-datos-vectoriales","name":"Bases de datos vectoriales"},{"id":"busqueda-aproximada-de-vecinos","name":"Búsqueda aproximada de vecinos (ANN)"},{"id":"busqueda-hibrida","name":"Búsqueda híbrida"},{"id":"re-ranking","name":"Re-ranking y Reciprocal Rank Fusion"},{"id":"reescritura-de-consultas","name":"Reescritura de consultas"},{"id":"compresion-y-reordenacion-del-contexto","name":"Compresión y reordenación del contexto"},{"id":"graphrag","name":"GraphRAG"},{"id":"agentic-rag","name":"Agentic RAG"},{"id":"evaluacion-de-rag","name":"Evaluación de RAG"}]},{"id":"agentes-de-ia","name":"Agentes de IA","children":[{"id":"agente-llm","name":"Agente (LLM + herramientas + bucle)"},{"id":"function-calling","name":"Llamada a herramientas (function calling)"},{"id":"bucle-react","name":"Bucle ReAct"},{"id":"memoria-del-agente","name":"Memoria del agente"},{"id":"guardrails-y-middleware","name":"Guardrails y middleware"},{"id":"human-in-the-loop","name":"Human-in-the-loop"},{"id":"agentes-de-codigo","name":"Agentes de código"},{"id":"sistemas-multiagente","name":"Sistemas multiagente"},{"id":"mcp","name":"Model Context Protocol (MCP)"},{"id":"evaluacion-de-agentes","name":"Evaluación de agentes"},{"id":"riesgos-y-permisos","name":"Riesgos y permisos"}]}]},{"id":"vision-por-computador","name":"Visión por computador","en":"computer vision","frase":"Máquinas que interpretan imágenes y vídeo: clasifican, detectan, segmentan y reconstruyen.","desc":"Enseñar a las máquinas a interpretar imágenes y vídeo: clasificar, detectar objetos, segmentar píxeles, estimar profundidad o reconstruir escenas en 3D. El campo ha pasado de los filtros diseñados a mano a las CNN y los Vision Transformers entrenados con grandes cantidades de datos.","cuando":"Cuando la información que necesitas está en imágenes o en vídeo.","ej":"Un coche autónomo detecta peatones y señales (detección) y separa la calzada del resto de la escena (segmentación) en tiempo real.","rel":["cnn","vit","deteccion-de-objetos","segmentacion"],"children":[{"id":"vision-clasica","name":"Visión clásica","children":[{"id":"piramides-gaussiana-y-laplaciana","name":"Pirámides gaussiana y laplaciana"},{"id":"transformada-de-fourier","name":"Transformada de Fourier"},{"id":"wavelets","name":"Wavelets"}]},{"id":"arquitecturas-cnn-de-referencia","name":"Arquitecturas CNN de referencia","children":[{"id":"imagenet-y-alexnet","name":"ImageNet y AlexNet"},{"id":"vgg","name":"VGG"},{"id":"googlenet","name":"GoogLeNet (Inception)"},{"id":"resnet","name":"ResNet"},{"id":"densenet-resnext-y-senet","name":"DenseNet, ResNeXt y SENet"},{"id":"mobilenet-y-efficientnet","name":"MobileNet y EfficientNet"},{"id":"convnext","name":"ConvNeXt"}]},{"id":"vit","name":"Vision Transformer (ViT)"},{"id":"clasificacion-de-imagenes","name":"Clasificación de imágenes"},{"id":"deteccion-de-objetos","name":"Detección de objetos","children":[{"id":"cajas-delimitadoras-e-iou","name":"Cajas delimitadoras e IoU"},{"id":"detectores-de-dos-fases","name":"Detectores de dos fases (R-CNN)"},{"id":"detectores-de-una-fase","name":"Detectores de una fase (YOLO, RetinaNet)"},{"id":"seguimiento-de-objetos","name":"Seguimiento de objetos (tracking)"}]},{"id":"segmentacion","name":"Segmentación","children":[{"id":"segmentacion-semantica-y-de-instancias","name":"Segmentación semántica y de instancias"},{"id":"u-net","name":"U-Net"},{"id":"sam","name":"Segment Anything (SAM)"}]},{"id":"estimacion-de-pose-y-profundidad","name":"Estimación de pose y profundidad"},{"id":"calidad-de-imagen","name":"Calidad de imagen (IQA)","children":[{"id":"con-referencia-vs-sin-referencia","name":"Con referencia vs sin referencia"},{"id":"psnr-y-ssim","name":"PSNR y SSIM"},{"id":"metricas-perceptuales","name":"Métricas perceptuales (LPIPS, NLPD)"}]},{"id":"vision-3d-y-neural-rendering","name":"Visión 3D y neural rendering","children":[{"id":"nerf","name":"NeRF"},{"id":"gaussian-splatting","name":"Gaussian Splatting"}]}]},{"id":"ia-multimodal-y-audio","name":"IA multimodal y audio","en":"multimodal AI & audio","frase":"Modelos que combinan texto, imagen, audio y vídeo en un mismo sistema.","desc":"Modelos que combinan varias modalidades (texto, imagen, audio y vídeo) en un mismo sistema. Sirven para buscar imágenes con texto, describir una foto, responder preguntas sobre un documento escaneado o transcribir y sintetizar voz. La clave es alinear las modalidades en un espacio de representación común.","cuando":"Cuando el problema mezcla modalidades, como buscar imágenes con texto o preguntar sobre un documento escaneado, o cuando trabajas con voz.","ej":"CLIP permite buscar \"un perro corriendo por la playa\" entre millones de fotos aunque ninguna esté etiquetada con esas palabras.","rel":["clip","mllm","texto-a-imagen","audio-y-voz"],"children":[{"id":"aprendizaje-multimodal","name":"Aprendizaje multimodal"},{"id":"tareas-multimodales","name":"Tareas multimodales (recuperación, captioning, VQA)"},{"id":"datasets-multimodales","name":"Datasets multimodales"},{"id":"modelos-contrastivos-imagen-texto","name":"Modelos contrastivos imagen-texto","children":[{"id":"clip","name":"CLIP"},{"id":"clasificacion-zero-shot","name":"Clasificación zero-shot"},{"id":"siglip","name":"SigLIP"}]},{"id":"mllm","name":"Modelos de lenguaje multimodales (MLLM / VLM)","children":[{"id":"arquitectura-mllm","name":"Arquitectura: encoder, conector y LLM"},{"id":"entrenamiento-mllm","name":"Entrenamiento de un MLLM"},{"id":"modelos-any-to-any","name":"Modelos any-to-any"}]},{"id":"generacion-multimodal","name":"Generación multimodal","children":[{"id":"texto-a-imagen","name":"Texto a imagen"},{"id":"generacion-de-video","name":"Texto a vídeo e imagen a vídeo"}]},{"id":"audio-y-voz","name":"Audio y voz","children":[{"id":"espectrograma-de-mel","name":"Espectrograma de Mel"},{"id":"reconocimiento-de-voz","name":"Reconocimiento de voz (Whisper)"},{"id":"sintesis-de-voz","name":"Síntesis de voz (TTS)"},{"id":"clap","name":"CLAP (audio-texto)"},{"id":"generacion-de-musica","name":"Generación de música"}]}]},{"id":"series-temporales","name":"Series temporales","en":"time series","frase":"Datos ordenados en el tiempo: anticipar lo que viene y entender su dinámica.","desc":"Datos ordenados en el tiempo, donde cada valor depende de los anteriores: ventas, temperatura, tráfico o señales de sensores. Los problemas típicos son predecir valores futuros (forecasting), clasificar secuencias y detectar comportamientos anómalos. Exigen validar respetando el orden temporal.","cuando":"Cuando el orden temporal importa y quieres anticipar valores futuros o entender cómo evoluciona algo.","ej":"Predecir la demanda eléctrica de las próximas 24 horas a partir del consumo de las últimas semanas y la previsión meteorológica.","rel":["prediccion-multipaso","enventanado","modelos-fundacionales-de-series","validacion-en-series-temporales"],"children":[{"id":"componentes-de-una-serie","name":"Componentes de una serie (tendencia, estacionalidad)"},{"id":"estacionariedad","name":"Estacionariedad"},{"id":"autocorrelacion","name":"Autocorrelación"},{"id":"enventanado","name":"Enventanado"},{"id":"prediccion-multipaso","name":"Predicción a uno y varios pasos"},{"id":"prediccion-autorregresiva","name":"Predicción autorregresiva"},{"id":"redes-neuronales-para-series","name":"Redes neuronales para series"},{"id":"modelos-fundacionales-de-series","name":"Modelos fundacionales de series (TimesFM, Chronos)"},{"id":"dtw","name":"Dynamic Time Warping (DTW)"},{"id":"series-como-imagenes","name":"Series como imágenes (GAF, wavelets, espectrograma)"}]},{"id":"sistemas-de-recomendacion","name":"Sistemas de recomendación","en":"recommender systems","frase":"Predecir qué le interesará a cada usuario a partir de su comportamiento y el de otros.","desc":"Sistemas que predicen qué ítems (películas, productos, canciones) interesarán a cada usuario a partir de su historial y del de usuarios parecidos. Combinan filtrado basado en contenido, filtrado colaborativo, factorización de matrices y modelos profundos basados en embeddings.","cuando":"Cuando hay muchos ítems entre los que elegir y quieres mostrar a cada usuario los más relevantes para él.","ej":"Netflix recomienda series según lo que has visto y lo que vieron usuarios con gustos similares, y hasta elige qué portada enseñarte.","rel":["filtrado-colaborativo","factorizacion-de-matrices","embeddings","recall-k-y-hitrate-k"],"children":[{"id":"el-problema-de-la-recomendacion","name":"El problema de la recomendación"},{"id":"matriz-de-utilidad","name":"Matriz de utilidad (usuario-ítem)"},{"id":"feedback-explicito-vs-implicito","name":"Feedback explícito vs implícito"},{"id":"filtrado-basado-en-contenido","name":"Filtrado basado en contenido"},{"id":"filtrado-colaborativo","name":"Filtrado colaborativo"},{"id":"factorizacion-de-matrices","name":"Factorización de matrices"},{"id":"sistemas-hibridos","name":"Sistemas híbridos"},{"id":"recomendacion-basada-en-sesion","name":"Recomendación basada en sesión"},{"id":"arranque-en-frio","name":"Arranque en frío (cold start)"},{"id":"recomendacion-con-deep-learning","name":"Recomendación con deep learning","children":[{"id":"autorec","name":"AutoRec"},{"id":"ncf","name":"Neural Collaborative Filtering (GMF, NeuMF)"},{"id":"dcn","name":"Deep & Cross Network (DCN)"}]},{"id":"scoring-y-re-ranking","name":"Scoring y re-ranking"},{"id":"burbuja-de-filtro","name":"Burbuja de filtro"},{"id":"evaluacion-de-recomendadores","name":"Evaluación de recomendadores","children":[{"id":"recall-k-y-hitrate-k","name":"Recall@K y HitRate@K"},{"id":"diversidad-novedad-y-serendipia","name":"Diversidad, novedad y serendipia"}]}]},{"id":"deteccion-de-anomalias","name":"Detección de anomalías","en":"anomaly detection","frase":"Encontrar lo raro: datos que no encajan con el comportamiento normal.","desc":"Identificar observaciones que se desvían del comportamiento normal: fraudes, averías, intrusiones o errores de medida. Como las anomalías son raras y casi nunca están etiquetadas, se suele modelar la normalidad (por distancia, probabilidad o reconstrucción) y marcar lo que no encaja.","cuando":"Cuando buscas casos raros (fraude, averías, errores) y apenas tienes ejemplos etiquetados de ellos.","ej":"Un autoencoder entrenado solo con transacciones normales reconstruye mal una fraudulenta, y ese error de reconstrucción alto la delata.","rel":["outliers","deteccion-por-reconstruccion-o-prediccion","isolation-forest","ood"],"children":[{"id":"anomalia-outlier-ruido-y-novedad","name":"Anomalía, outlier, ruido y novedad"},{"id":"ood","name":"Detección fuera de distribución (OOD)"},{"id":"enfoques-deteccion-anomalias","name":"Enfoques supervisado, semisupervisado y no supervisado"},{"id":"deteccion-basada-en-distancia","name":"Detección basada en distancia"},{"id":"deteccion-basada-en-probabilidad","name":"Detección basada en probabilidad"},{"id":"deteccion-teoria-informacion","name":"Detección basada en teoría de la información"},{"id":"deteccion-por-reconstruccion-o-prediccion","name":"Detección por reconstrucción o predicción"},{"id":"lof","name":"Local Outlier Factor (LOF)"},{"id":"isolation-forest","name":"Isolation Forest"},{"id":"deteccion-con-modelos-generativos","name":"Detección con modelos generativos"},{"id":"eleccion-del-umbral","name":"Elección del umbral"}]},{"id":"ia-fiable-y-responsable","name":"IA fiable y responsable","en":"trustworthy & responsible AI","frase":"Que la IA sea explicable, justa, robusta, consciente de su incertidumbre y legal.","desc":"Lo que hace falta para que la IA sea digna de confianza. Hay que entender por qué decide lo que decide (explicabilidad), evitar que discrimine (equidad), que resista manipulaciones (robustez), que sepa cuándo no está segura (incertidumbre) y que cumpla la regulación (RGPD, AI Act).","cuando":"Cuando un modelo toma decisiones que afectan a personas o hay que justificarlas, auditarlas o adaptarlas a la regulación.","ej":"Si un modelo deniega un préstamo, SHAP muestra qué variables pesaron en la decisión. Una explicación contrafactual indica qué tendría que cambiar para aprobarlo.","rel":["xai","equidad","robustez","ai-act"],"children":[{"id":"xai","name":"Explicabilidad (XAI)","children":[{"id":"caja-negra-vs-caja-blanca","name":"Caja negra vs caja blanca"},{"id":"interpretabilidad-vs-explicabilidad","name":"Interpretabilidad vs explicabilidad"},{"id":"transparencia","name":"Transparencia (simulable, descomponible, algorítmica)"},{"id":"taxonomia-de-metodos-xai","name":"Taxonomía de métodos XAI"},{"id":"modelos-interpretables-por-diseno","name":"Modelos interpretables por diseño","children":[{"id":"reglas-de-decision","name":"Reglas de decisión (RIPPER)"},{"id":"rulefit","name":"RuleFit"},{"id":"ebm","name":"Explainable Boosting Machine (EBM)"}]},{"id":"explicaciones-locales","name":"Explicaciones locales","children":[{"id":"perfiles-ceteris-paribus","name":"Perfiles Ceteris Paribus"},{"id":"ice","name":"ICE (Individual Conditional Expectation)"},{"id":"lime","name":"LIME"},{"id":"anchors","name":"Anchors (reglas acotadas)"},{"id":"valores-de-shapley","name":"Valores de Shapley"},{"id":"shap","name":"SHAP"},{"id":"explicaciones-contrafactuales","name":"Explicaciones contrafactuales"},{"id":"prototipos-y-excepciones","name":"Prototipos y excepciones"}]},{"id":"explicaciones-globales","name":"Explicaciones globales","children":[{"id":"pdp","name":"PDP (dependencia parcial)"},{"id":"ale","name":"ALE (efectos locales acumulados)"},{"id":"importancia-por-permutacion","name":"Importancia por permutación"},{"id":"modelo-subrogado-global","name":"Modelo subrogado global"},{"id":"analisis-de-interacciones","name":"Análisis de interacciones"}]},{"id":"explicabilidad-en-deep-learning","name":"Explicabilidad en deep learning","children":[{"id":"grad-cam","name":"Mapas de saliencia y Grad-CAM"},{"id":"visualizacion-de-filtros-y-activaciones","name":"Visualización de filtros y activaciones"},{"id":"mapas-de-atencion","name":"Mapas de atención"}]},{"id":"evaluacion-de-explicaciones","name":"Evaluación de explicaciones"}]},{"id":"equidad","name":"Equidad (fairness)","children":[{"id":"sesgo-algoritmico-y-atributos-sensibles","name":"Sesgo algorítmico y atributos sensibles"},{"id":"metricas-de-equidad","name":"Métricas de equidad"},{"id":"mitigacion-del-sesgo","name":"Mitigación del sesgo"}]},{"id":"robustez","name":"Robustez","children":[{"id":"ejemplos-adversarios","name":"Ejemplos adversarios"},{"id":"fgsm","name":"FGSM"},{"id":"ataque-de-un-pixel","name":"Ataque de un píxel"},{"id":"entrenamiento-robusto","name":"Entrenamiento robusto"}]},{"id":"incertidumbre","name":"Incertidumbre","children":[{"id":"incertidumbre-aleatoria-y-epistemica","name":"Incertidumbre aleatoria y epistémica"},{"id":"propagacion-de-la-incertidumbre","name":"Propagación de la incertidumbre"},{"id":"estimacion-de-incertidumbre-en-redes","name":"Estimación de incertidumbre en redes"}]},{"id":"regulacion-y-gobernanza","name":"Regulación y gobernanza","children":[{"id":"decisiones-automatizadas-y-rgpd","name":"Decisiones automatizadas y RGPD"},{"id":"ai-act","name":"AI Act"},{"id":"gobernanza-ia","name":"Estándares y gobernanza de la IA"},{"id":"model-cards","name":"Model cards"}]}]},{"id":"aprendizaje-por-refuerzo","name":"Aprendizaje por refuerzo","en":"reinforcement learning","frase":"Aprender a decidir por ensayo y error, maximizando una recompensa acumulada.","desc":"Un agente aprende a tomar decisiones interactuando con un entorno. Actúa, recibe una recompensa y ajusta su política para maximizar la recompensa acumulada. No hay etiquetas con la respuesta correcta, solo señales de lo bien o mal que ha ido, y el dilema central es explorar acciones nuevas o explotar las que ya funcionan.","cuando":"Cuando hay que tomar decisiones en secuencia y aprender de la recompensa que generan, sin respuestas correctas de antemano.","ej":"AlphaGo Zero aprendió a jugar al go desde cero jugando millones de partidas contra sí mismo. Un sistema de anuncios elige qué banner mostrar según los clics que va recibiendo.","rel":["agente-entorno-y-recompensa","exploracion-vs-explotacion","multi-armed-bandits","rlhf"],"children":[{"id":"agente-entorno-y-recompensa","name":"Agente, entorno y recompensa"},{"id":"politica-y-funcion-de-valor","name":"Política y función de valor"},{"id":"exploracion-vs-explotacion","name":"Exploración vs explotación"},{"id":"multi-armed-bandits","name":"Multi-armed bandits","children":[{"id":"epsilon-greedy","name":"Greedy y ε-greedy"},{"id":"valores-iniciales-optimistas","name":"Valores iniciales optimistas"},{"id":"ucb","name":"UCB (Upper Confidence Bound)"},{"id":"muestreo-de-thompson","name":"Muestreo de Thompson"},{"id":"bandits-contextuales","name":"Bandits contextuales (LinUCB)"}]},{"id":"regret","name":"Regret"}]}]}</script>
+<script>
+(() => {
+  "use strict";
+  const DATA = JSON.parse(document.getElementById("datos").textContent);
+  const $ = (s) => document.querySelector(s);
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isMobile = () => matchMedia("(max-width: 860px)").matches;
+  const DEFAULT_ID = "aprendizaje-supervisado";   // vista inicial sin enlace directo
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---------- Índice del árbol ----------
+  const areas = DATA.children || [];
+  const byId = new Map(), order = [];
+  (function index(n, parent, depth, area) {
+    n.parent = parent; n.depth = depth; n.area = depth === 1 ? n : area;
+    n.ai = n.area ? areas.indexOf(n.area) : -1;            // índice de área → color viridis
+    byId.set(n.id, n); order.push(n);
+    (n.children || []).forEach((c) => index(c, n, depth + 1, depth === 0 ? null : n.area));
+  })(DATA, null, 0, null);
+  const total = order.length - 1;                             // sin contar la raíz
+  const conFicha = order.filter((n) => n.depth > 0 && n.desc).length;
+  const color = (n) => (n.ai >= 0 ? `var(--a${n.ai})` : "var(--accent)");
+
+  $("#q").placeholder = `Buscar entre ${total} conceptos`;
+  if (conFicha < total) {
+    const p = $("#m-estado");
+    p.textContent = `Prototipo: ${conFicha} de ${total} fichas redactadas`;
+    p.hidden = false;
+  }
+
+  // ---------- Estado ----------
+  const expanded = new Set([DATA.id]);
+  let selected = DATA.id, pathSet = new Set([DATA.id]);
+  const ZOOMS = [0.55, 0.7, 0.85, 1, 1.15, 1.3];
+  let zi = 3;
+
+  // ---------- Nodos (se crean una vez; se muestran u ocultan) ----------
+  const viewport = $("#viewport"), sizer = $("#sizer"), canvas = $("#canvas");
+  const nodesEl = $("#nodes"), wiresEl = $("#wires");
+  const els = new Map(), heights = new Map();
+  order.forEach((n) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `node d${Math.min(n.depth, 2)}` + (n.depth > 0 && !n.desc ? " pending" : "");
+    b.style.setProperty("--c", color(n));
+    b.innerHTML = '<span class="port in"></span><span class="label"></span>' +
+      (n.children ? '<span class="count"></span><span class="port out"></span>' : "");
+    // Las palabras con guion (k-NN, t-SNE, multi-salida) no se parten a final de línea
+    b.querySelector(".label").innerHTML = esc(n.name).replace(/(\S+-\S+)/g, '<span class="nw">$1</span>');
+    b.setAttribute("aria-label", n.name);
+    b.hidden = true;
+    b.addEventListener("click", () => { hideTip(); onNodeClick(n.id); });
+    // "En una frase": al pasar el ratón (no en pantallas táctiles) o al llegar con el teclado
+    b.addEventListener("pointerenter", (e) => { if (e.pointerType !== "touch") scheduleTip(n, b); });
+    b.addEventListener("pointerleave", hideTip);
+    b.addEventListener("focus", () => { if (b.matches(":focus-visible")) scheduleTip(n, b, 0); });
+    b.addEventListener("blur", hideTip);
+    nodesEl.appendChild(b);
+    els.set(n.id, b);
+  });
+
+  // ---------- Layout: árbol horizontal con alturas variables ----------
+  const PAD = 32, GAP_X = 58, GAP_Y = 8, GAP_GROUP = 14, W_ROOT = 168, W_NODE = 216;
+  const nodeW = (n) => (n.depth === 0 ? W_ROOT : W_NODE);
+  const colX = (d) => PAD + (d === 0 ? 0 : W_ROOT + GAP_X + (d - 1) * (W_NODE + GAP_X));
+
+  function visibleList() {
+    const out = [];
+    (function walk(n) { out.push(n); if (expanded.has(n.id)) (n.children || []).forEach(walk); })(DATA);
+    return out;
+  }
+
+  function layout() {
+    let cursor = PAD;
+    (function place(n) {
+      n._x = colX(n.depth); n._w = nodeW(n); n._h = heights.get(n.id);
+      const kids = expanded.has(n.id) ? n.children || [] : [];
+      if (!kids.length) { n._y = cursor; cursor += n._h + GAP_Y; return; }
+      const start = cursor;
+      kids.forEach(place);
+      const first = kids[0], last = kids[kids.length - 1];
+      n._y = Math.max(start, (first._y + last._y + last._h) / 2 - n._h / 2);   // centrado sobre sus hijos
+      cursor = Math.max(cursor, n._y + n._h + GAP_Y) + GAP_GROUP;
+    })(DATA);
+    return cursor;
+  }
+
+  function render(nuevos = new Set()) {
+    const list = visibleList();
+    const vis = new Set(list.map((n) => n.id));
+    order.forEach((n) => { const el = els.get(n.id); if (el.hidden === vis.has(n.id)) el.hidden = !vis.has(n.id); });
+    list.forEach((n) => { if (!heights.has(n.id)) heights.set(n.id, els.get(n.id).offsetHeight); });
+    const H = layout() + PAD;
+    let W = 0, k = 0;
+    list.forEach((n) => {
+      const el = els.get(n.id);
+      el.style.transform = `translate(${n._x}px, ${n._y}px)`;
+      W = Math.max(W, n._x + n._w + PAD);
+      const abierto = expanded.has(n.id) && !!n.children;
+      if (n.children) {
+        el.setAttribute("aria-expanded", String(abierto));
+        el.querySelector(".count").textContent = abierto ? "" : n.children.length;
+      }
+      el.classList.toggle("open", abierto);
+      el.classList.toggle("sel", n.id === selected);
+      el.classList.toggle("path", pathSet.has(n.id) && n.id !== selected);
+      if (n.id === selected) el.setAttribute("aria-current", "true"); else el.removeAttribute("aria-current");
+      if (nuevos.has(n.id) && !reduceMotion) {
+        el.classList.remove("enter"); void el.offsetWidth;
+        el.style.setProperty("--i", k++); el.classList.add("enter");
+      }
+    });
+    const z = ZOOMS[zi];
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    canvas.style.transform = `scale(${z})`;
+    sizer.style.width = W * z + "px"; sizer.style.height = H * z + "px";
+    drawWires(list, nuevos, W, H);
+  }
+
+  function drawWires(list, nuevos, W, H) {
+    wiresEl.setAttribute("width", W); wiresEl.setAttribute("height", H);
+    wiresEl.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    let s = "";
+    list.forEach((n) => {
+      const p = n.parent;
+      if (!p) return;
+      const x1 = p._x + p._w, y1 = p._y + p._h / 2, x2 = n._x, y2 = n._y + n._h / 2, dx = (x2 - x1) / 2;
+      const cls = "w" + (pathSet.has(n.id) ? " on" : "") + (nuevos.has(n.id) && !reduceMotion ? " draw" : "");
+      s += `<path class="${cls}" pathLength="1" style="stroke:${color(n)}" d="M${x1} ${y1}C${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}"/>`;
+    });
+    wiresEl.innerHTML = s;
+  }
+
+  // ---------- Navegación ----------
+  function setPath() {
+    pathSet = new Set();
+    for (let n = byId.get(selected); n; n = n.parent) pathSet.add(n.id);
+  }
+
+  function select(id, { expand = false, sheet = false, instant = false } = {}) {
+    const n = byId.get(id);
+    if (!n) return;
+    const nuevos = new Set();
+    for (let p = n.parent; p; p = p.parent) {
+      if (!expanded.has(p.id)) { expanded.add(p.id); (p.children || []).forEach((c) => nuevos.add(c.id)); }
+    }
+    if (expand && n.children && !expanded.has(id)) { expanded.add(id); n.children.forEach((c) => nuevos.add(c.id)); }
+    selected = id;
+    setPath();
+    render(nuevos);
+    renderCard(n);
+    reveal(n, instant);
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* sin historial disponible */ }
+    if (sheet && isMobile()) setSheet(sheet);              // en móvil: primero la frase ("peek"), luego la ficha
+  }
+
+  function onNodeClick(id) {
+    const n = byId.get(id);
+    if (n.children && n.depth > 0 && selected === id && expanded.has(id)) {   // segundo clic: plegar
+      (function fold(m) { expanded.delete(m.id); (m.children || []).forEach(fold); })(n);
+      render();
+      return;
+    }
+    select(id, { expand: true, sheet: "peek" });
+  }
+
+  // ---------- "En una frase": tarjeta flotante junto al nodo ----------
+  const tip = $("#tip"), tipText = $("#tip-text");
+  let tipTimer = 0, tipFor = null;
+  function scheduleTip(n, el, delay = 380) {
+    clearTimeout(tipTimer);
+    if (!n.frase || n.id === selected || isMobile()) return;   // la ficha abierta ya lo dice; en móvil va en la hoja
+    tipTimer = setTimeout(() => showTip(n, el), delay);
+  }
+  function showTip(n, el) {
+    tipText.textContent = n.frase;
+    tip.style.setProperty("--c", color(n));
+    tip.hidden = false;
+    tip.classList.remove("on");
+    const r = el.getBoundingClientRect(), v = viewport.getBoundingClientRect();
+    const w = Math.min(300, v.width - 24);
+    tip.style.maxWidth = w + "px";
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    // Debajo del nodo; si no cabe en el mapa, encima. Nunca tapa el propio nodo.
+    let top = r.bottom + 10, down = false;
+    if (top + th > v.bottom - 8 && r.top - th - 10 > v.top + 4) { top = r.top - th - 10; down = true; }
+    const left = Math.min(Math.max(r.left + 4, v.left + 8), v.right - tw - 8);
+    tip.style.top = top + "px"; tip.style.left = left + "px";
+    tip.style.setProperty("--ax", Math.min(Math.max(r.left + 22 - left, 16), tw - 16) + "px");   // flecha hacia el nodo
+    tip.classList.toggle("down", down);
+    el.setAttribute("aria-describedby", "tip");
+    tipFor = el;
+    requestAnimationFrame(() => tip.classList.add("on"));
+  }
+  function hideTip() {
+    clearTimeout(tipTimer);
+    if (tipFor) { tipFor.removeAttribute("aria-describedby"); tipFor = null; }
+    tip.classList.remove("on");
+    tip.hidden = true;
+  }
+  viewport.addEventListener("scroll", hideTip, { passive: true });
+
+  // Desplaza lo justo para que el nodo (y su columna de hijos, si está abierto) quede a la vista
+  function reveal(n, instant) {
+    const z = ZOOMS[zi], vw = viewport.clientWidth, vh = viewport.clientHeight;
+    const right = (n._x + n._w + (expanded.has(n.id) && n.children ? GAP_X + W_NODE : 0)) * z + 24;
+    let left = viewport.scrollLeft;
+    if (right > left + vw) left = right - vw;
+    if (n._x * z - 24 < left) left = n._x * z - 24;
+    const top = (n._y + n._h / 2) * z - vh / 2;
+    viewport.scrollTo({ left: Math.max(0, left), top: Math.max(0, top), behavior: instant || reduceMotion ? "auto" : "smooth" });
+  }
+
+  // ---------- Ficha ----------
+  const ficha = $("#ficha");
+  const fmt = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+  const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+  const chip = (id) => {
+    const m = byId.get(id);
+    const t = m.frase ? ` title="${esc(m.frase)}"` : "";
+    return `<button type="button" class="chip" data-go="${m.id}" style="--c:${color(m)}"${t}><span class="dot"></span>${esc(m.name)}</button>`;
+  };
+  const ICONO_EXT = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const pyItem = (p) => {
+    const docs = p.u ? `<a class="docs" href="${esc(p.u)}" target="_blank" rel="noopener noreferrer" aria-label="Documentación oficial de ${esc(p.c)} (se abre en una pestaña nueva)">Docs ${ICONO_EXT}</a>` : "";
+    return `<li><code>${esc(p.c)}</code>${docs}<button type="button" class="copy" data-copy="${esc(p.c)}">Copiar</button></li>`;
+  };
+
+  function renderCard(n) {
+    const ruta = [];
+    for (let p = n.parent; p && p.depth > 0; p = p.parent) ruta.unshift(p);
+    const h = [];
+    h.push('<nav class="crumbs" aria-label="Ruta">' + (n.depth === 0 ? "<span>Raíz del mapa</span>" :
+      ['<button type="button" data-go="' + DATA.id + '">IA</button>']
+        .concat(ruta.map((p) => `<button type="button" data-go="${p.id}">${esc(p.name)}</button>`))
+        .join('<span aria-hidden="true">›</span>')) + "</nav>");
+    h.push(`<h2 id="ficha-titulo">${esc(n.name)}</h2>`);
+    if (n.en && norm(n.en) !== norm(n.name)) h.push(`<p class="en" lang="en">${esc(n.en)}</p>`);
+    if (n.desc) {
+      // Orden de lectura: qué es (frase + explicación) → cuándo usarlo → ejemplo → cómo usarlo (hiperparámetros, Python)
+      if (n.frase) h.push(`<p class="lead">${fmt(n.frase)}</p>`);
+      h.push(`<p class="desc">${fmt(n.desc)}</p>`);
+      if (n.cuando) h.push(`<section class="blk cuando"><h3>Cuándo usarlo</h3><p>${fmt(n.cuando)}</p></section>`);
+      if (n.ej) h.push(`<section class="blk ej"><h3>Ejemplo</h3><p>${fmt(n.ej)}</p></section>`);
+      if (n.hp && n.hp.length) h.push(`<section class="blk"><h3>Hiperparámetros clave</h3><dl class="hp">${
+        n.hp.map(([k, v]) => `<dt>${k.split("/").map((s) => `<code>${esc(s.trim())}</code>`).join(" / ")}</dt><dd>${fmt(v)}</dd>`).join("")}</dl></section>`);
+    } else {
+      h.push('<p class="pending-note">Esta ficha todavía no está redactada en el prototipo.</p>');
+    }
+    if (n.py && n.py.length) h.push(`<section class="blk"><h3>En Python</h3><ul class="py">${n.py.map(pyItem).join("")}</ul></section>`);
+    if (n.rel && n.rel.length) h.push(`<section class="blk"><h3>Relacionados</h3><div class="chips">${n.rel.map(chip).join("")}</div></section>`);
+    if (n.children) h.push(`<section class="blk"><h3>En esta rama (${n.children.length})</h3><div class="chips">${n.children.map((c) => chip(c.id)).join("")}</div></section>`);
+    const i = order.indexOf(n), prev = order[i - 1], next = order[i + 1];
+    h.push('<footer class="seq">' +
+      `<button type="button" class="btn" data-go="${prev ? prev.id : ""}"${prev ? "" : " disabled"}>Anterior</button>` +
+      `<span class="pos">${i} de ${total}</span>` +
+      `<button type="button" class="btn" data-go="${next ? next.id : ""}"${next ? "" : " disabled"}>Siguiente</button></footer>`);
+    if (n.depth === 0) h.push('<p class="foot">Pasa el ratón por un concepto para ver su idea en una frase; púlsalo para abrir su ficha y su rama. Cada área lleva su color de la escala viridis. Atajos: <kbd>/</kbd> para buscar, <kbd>←</kbd> y <kbd>→</kbd> para pasar al concepto anterior o siguiente.</p>');
+    ficha.innerHTML = h.join("");
+    $("#peek-title").textContent = n.name;
+    $("#peek-frase").textContent = n.frase || "";
+    $("#panel").scrollTop = 0;
+    updatePeek();
+  }
+
+  // Altura de la hoja asomada (móvil): lo que mida la cabecera con nombre y frase
+  function updatePeek() {
+    if (!isMobile()) return;
+    const h = $("#handle").offsetHeight;
+    if (h) document.documentElement.style.setProperty("--peek", h + "px");
+  }
+
+  $("#panel").addEventListener("click", (e) => {
+    const go = e.target.closest("[data-go]");
+    if (go && go.dataset.go) { select(go.dataset.go, { expand: true }); return; }
+    const cp = e.target.closest(".copy");
+    if (cp) copiar(cp);
+  });
+
+  function copiar(btn) {
+    const done = (t) => { btn.textContent = t; setTimeout(() => (btn.textContent = "Copiar"), 1400); };
+    const fallback = () => {
+      const r = document.createRange(); r.selectNodeContents(btn.previousElementSibling);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r); done("Seleccionado");
+    };
+    try { navigator.clipboard.writeText(btn.dataset.copy).then(() => done("Copiado"), fallback); }
+    catch (e) { fallback(); }
+  }
+
+  // ---------- Hoja inferior (móvil) ----------
+  const panel = $("#panel"), handle = $("#handle");
+  function setSheet(state) {
+    panel.dataset.state = state;
+    handle.setAttribute("aria-expanded", String(state === "open"));
+    $("#peek-accion").textContent = state === "open" ? "Ocultar" : "Ver ficha";
+  }
+  handle.addEventListener("click", () => setSheet(panel.dataset.state === "open" ? "peek" : "open"));
+
+  // ---------- Buscador ----------
+  const q = $("#q"), res = $("#resultados");
+  const idx = order.filter((n) => n.depth > 0).map((n) => ({
+    n, name: norm(n.name), all: norm([n.name, n.en || "", n.frase || "", n.desc || "", n.cuando || "", n.ej || ""].join(" ")),
+  }));
+  let hits = [], active = -1;
+
+  function buscar(texto) {
+    const t = norm(texto.trim()).split(/\s+/).filter(Boolean);
+    if (!t.length) return [];
+    const out = [];
+    idx.forEach((r) => {
+      if (!t.every((w) => r.all.includes(w))) return;
+      const frase = t.join(" ");
+      const score = r.name.startsWith(frase) ? 4 : r.name.includes(frase) ? 3 : t.every((w) => r.name.includes(w)) ? 2 : 1;
+      out.push([score, r.n]);
+    });
+    out.sort((a, b) => b[0] - a[0] || a[1].name.length - b[1].name.length);
+    return out.slice(0, 14).map((x) => x[1]);
+  }
+
+  function pintarResultados() {
+    if (!q.value.trim()) { cerrarResultados(); return; }
+    res.innerHTML = hits.length ? hits.map((n, i) =>
+      `<li><button type="button" role="option" id="op-${i}" data-go="${n.id}" aria-selected="${i === active}" style="--c:${color(n)}">` +
+      `<span class="dot"></span><span class="r-name">${esc(n.name)}</span><span class="r-area">${esc(n.area ? n.area.name : "")}</span>` +
+      (n.frase ? `<span class="r-frase">${esc(n.frase)}</span>` : "") + `</button></li>`).join("")
+      : '<li class="vacio">Ningún concepto coincide. Prueba con otra palabra o con el término en inglés.</li>';
+    res.hidden = false;
+    q.setAttribute("aria-expanded", "true");
+    if (active >= 0) q.setAttribute("aria-activedescendant", `op-${active}`); else q.removeAttribute("aria-activedescendant");
+  }
+  function cerrarResultados() { res.hidden = true; q.setAttribute("aria-expanded", "false"); active = -1; }
+  function elegir(id) { cerrarResultados(); q.value = ""; select(id, { expand: true, sheet: "peek" }); }
+
+  q.addEventListener("input", () => { hits = buscar(q.value); active = hits.length ? 0 : -1; pintarResultados(); });
+  q.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" && hits.length) { active = (active + 1) % hits.length; pintarResultados(); e.preventDefault(); }
+    else if (e.key === "ArrowUp" && hits.length) { active = (active - 1 + hits.length) % hits.length; pintarResultados(); e.preventDefault(); }
+    else if (e.key === "Enter" && active >= 0) { elegir(hits[active].id); e.preventDefault(); }
+    else if (e.key === "Escape") { cerrarResultados(); q.blur(); }
+  });
+  res.addEventListener("mousedown", (e) => e.preventDefault());       // no perder el foco al pulsar
+  res.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b) elegir(b.dataset.go); });
+  q.addEventListener("blur", () => setTimeout(cerrarResultados, 120));
+
+  // ---------- Herramientas ----------
+  $("#b-general").addEventListener("click", () => {
+    expanded.clear(); expanded.add(DATA.id);
+    selected = DATA.id; setPath(); render(); renderCard(DATA);
+    viewport.scrollTo({ left: 0, top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    try { history.replaceState(null, "", "#" + DATA.id); } catch (e) { /* nada */ }
+  });
+  $("#b-rama").addEventListener("click", () => {
+    const n = byId.get(selected), nuevos = new Set();
+    (function all(m) { if (m.children) { if (!expanded.has(m.id)) m.children.forEach((c) => nuevos.add(c.id)); expanded.add(m.id); m.children.forEach(all); } })(n);
+    render(nuevos); reveal(n);
+  });
+  function setZoom(d) {
+    hideTip();
+    const n = byId.get(selected);
+    zi = Math.min(ZOOMS.length - 1, Math.max(0, zi + d));
+    $("#z-nivel").textContent = Math.round(ZOOMS[zi] * 100) + " %";
+    $("#z-menos").disabled = zi === 0; $("#z-mas").disabled = zi === ZOOMS.length - 1;
+    render(); reveal(n, true);
+  }
+  $("#z-menos").addEventListener("click", () => setZoom(-1));
+  $("#z-mas").addEventListener("click", () => setZoom(1));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") hideTip();
+    const t = e.target, escribiendo = t.matches && t.matches("input, textarea");
+    if (e.key === "/" && !escribiendo) { e.preventDefault(); q.focus(); return; }
+    if (escribiendo || e.metaKey || e.ctrlKey || e.altKey) return;
+    const i = order.indexOf(byId.get(selected));
+    if (e.key === "ArrowRight" && order[i + 1]) { e.preventDefault(); select(order[i + 1].id, { expand: true }); }
+    if (e.key === "ArrowLeft" && i > 0) { e.preventDefault(); select(order[i - 1].id, { expand: true }); }
+    if (e.key === "Escape" && isMobile()) setSheet("peek");
+  });
+
+  // ---------- Arranque ----------
+  const inicial = byId.has(location.hash.slice(1)) ? location.hash.slice(1) : DEFAULT_ID;
+  select(inicial, { expand: true, instant: true });
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { heights.clear(); render(); reveal(byId.get(selected), true); updatePeek(); });
+  }
+  addEventListener("resize", () => { hideTip(); updatePeek(); });
+})();
+</script>
+</body>
+</html>

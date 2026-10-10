@@ -1,0 +1,8 @@
+# Generados al construir (se regeneran con tools/html.py)
+datos/arbol.json
+datos/indice.tsv
+datos/mapa.json
+salida/
+__pycache__/
+*.pyc
+.DS_Store

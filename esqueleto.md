@@ -1,0 +1,610 @@
+# Mapa de la IA — esqueleto v0 (solo nombres)
+
+Leyenda (solo para esta revisión; no aparecerá en el mapa final):
+- **(+)** = concepto que añado yo para que la foto quede completa o coherente; no aparece como tal en el material.
+- Cada concepto vive en **un único sitio** del árbol. Los que son transversales (p. ej. *embeddings*, *U-Net*, *LoRA*) se conectan desde otras ramas mediante "conceptos relacionados" en su ficha.
+
+---
+
+- Inteligencia artificial
+  - 1. Fundamentos
+    - IA, machine learning y deep learning: cómo encajan {#ia-ml-dl}
+    - Programación clásica vs aprendizaje automático {#programacion-vs-ml}
+    - Breve historia de la IA (+)
+    - Los cuatro ingredientes: datos, modelo, objetivo y optimización {#cuatro-ingredientes}
+    - Parámetros e hiperparámetros
+    - Teoría de la decisión
+      - Riesgo de Bayes
+      - Minimización del riesgo empírico
+    - Generalización
+      - Sobreajuste (overfitting)
+      - Infraajuste (underfitting)
+      - Compromiso sesgo-varianza
+      - Regularización (idea general)
+    - Distancia y similitud
+      - Distancia euclídea (L2)
+      - Distancia Manhattan (L1) y normas Lp {#distancia-manhattan}
+      - Similitud coseno
+      - Distancia de Mahalanobis
+    - Paradigmas de aprendizaje
+      - Aprendizaje semisupervisado
+        - Cluster-then-label
+      - Supervisión débil
+        - Etiquetas ruidosas
+        - Etiquetas parciales
+        - Aprendizaje con proporciones de etiquetas {#proporciones-de-etiquetas}
+      - Aprendizaje activo
+      - Aprendizaje online
+  - 2. Probabilidad, información y causalidad
+    - Probabilidad y estadística
+      - Probabilidad frecuentista vs bayesiana
+      - Probabilidad condicional
+      - Teorema de Bayes
+      - Prior, verosimilitud y posterior
+      - Distribuciones de probabilidad
+      - Máxima verosimilitud (MLE)
+      - Log-verosimilitud negativa (NLL) {#nll}
+      - Contraste de hipótesis
+        - p-valor
+        - Intervalo de confianza
+        - Test chi-cuadrado
+    - Teoría de la información
+      - Información (Shannon) {#informacion-shannon}
+      - Entropía
+      - Divergencia de Kullback-Leibler
+      - Información mutua
+      - Correlación total
+    - Medidas de dependencia
+      - Independencia estadística
+      - Correlación de Pearson
+      - Correlación de Spearman
+      - Coeficiente de correlación de información (ICC) {#icc}
+      - HSIC (dependencia con kernels)
+      - Dependencia condicional
+    - Modelos gráficos probabilísticos
+      - Red bayesiana
+      - Aprendizaje de estructura
+        - Algoritmo PC
+        - Búsqueda por ascenso de colinas (hill climbing) {#hill-climbing}
+      - Regresión lineal bayesiana
+      - Modelo oculto de Márkov (HMM) {#hmm}
+    - Causalidad
+      - Correlación no implica causalidad
+      - Correlación espuria
+      - Causalidad de Granger
+      - Información dirigida
+      - Modelos de ruido aditivo (causalidad desde residuos)
+      - Descubrimiento causal
+  - 3. Flujo de trabajo en ML
+    - Ciclo de vida de un proyecto de ML {#ciclo-de-vida-ml}
+    - Línea base (baseline)
+    - Datos y preprocesado
+      - Análisis exploratorio (EDA) y auditoría de datos {#eda}
+      - Calidad y etiquetado de datos
+      - Valores faltantes e imputación
+      - Valores atípicos (outliers) {#outliers}
+      - Escalado de variables
+        - Estandarización (z-score)
+        - Normalización min-max
+      - Transformaciones de distribución (log, cuantiles)
+      - Codificación de variables categóricas
+      - Ingeniería de características (feature engineering) {#feature-engineering}
+      - Desbalanceo de clases
+        - Sobremuestreo (SMOTE, ADASYN)
+        - Submuestreo y ponderación de clases
+      - Fuga de datos (data leakage)
+      - Aumento de datos (data augmentation) {#data-augmentation}
+      - Pipelines de preprocesado
+    - Partición y validación
+      - Entrenamiento, validación y test
+      - Validación cruzada (k-fold)
+      - Validación en series temporales
+    - Métricas de evaluación
+      - Función de pérdida vs métrica
+      - Métricas de regresión
+        - MSE, RMSE y MAE
+        - Coeficiente de determinación (R²) {#r2}
+      - Métricas de clasificación
+        - Matriz de confusión
+        - Exactitud (accuracy) y exactitud balanceada {#accuracy}
+        - Precisión y recall
+        - F1-score
+        - Curva ROC y AUC
+        - Curva precisión-recall
+        - Umbral de decisión
+        - Promedios macro y micro
+    - Ajuste de hiperparámetros y AutoML
+      - Búsqueda en rejilla y aleatoria
+      - Optimización bayesiana de hiperparámetros
+      - AutoML
+      - Búsqueda de arquitecturas neuronales (NAS) {#nas}
+    - Despliegue y MLOps
+      - MLOps
+      - Despliegue e inferencia
+      - Monitorización y deriva de datos {#deriva-de-datos} (+)
+    - Herramientas y hardware
+      - GPU y TPU
+      - Frameworks de ML (scikit-learn, Keras/TensorFlow, PyTorch, JAX)
+      - Hugging Face (Hub y librerías)
+      - Seguimiento de experimentos (TensorBoard, W&B)
+  - 4. Aprendizaje supervisado
+    - Regresión vs clasificación
+    - Clasificación multiclase y multietiqueta
+    - Modelos lineales
+      - Regresión lineal (mínimos cuadrados)
+      - Regresión polinómica e interacciones
+      - Ridge, Lasso y Elastic Net
+      - Regresión logística
+        - Odds y odds ratio
+      - Modelos lineales generalizados (GLM) {#glm}
+      - Modelos mixtos (GLMM) {#glmm}
+      - Modelos aditivos generalizados (GAM) {#gam}
+    - k vecinos más cercanos (k-NN) {#knn}
+    - Árboles de decisión
+      - Criterios de división: Gini y entropía
+      - Poda y criterios de parada
+    - Métodos kernel
+      - Truco del kernel
+      - Máquinas de vectores soporte (SVM) {#svm}
+      - Regresión de vectores soporte (SVR) {#svr}
+      - Kernel ridge regression
+      - Procesos gaussianos (GP)
+    - Ensembles
+      - Por qué funcionan los ensembles
+      - Combinación por votación (mayoría, Borda, BKS)
+      - Combinadores algebraicos
+      - Stacking
+      - Mezcla de expertos (MoE)
+      - Bagging
+      - Random Forest
+      - Boosting
+        - AdaBoost
+        - Gradient Boosting
+        - XGBoost y LightGBM
+  - 5. Aprendizaje no supervisado
+    - Reducción de la dimensionalidad
+      - Maldición de la dimensionalidad
+      - Selección de características
+        - Métodos filtro (filter)
+        - Métodos envoltorio (wrapper)
+        - Métodos integrados (embedded)
+      - Extracción de características
+      - PCA (análisis de componentes principales)
+      - ICA (análisis de componentes independientes)
+      - LDA (análisis discriminante lineal)
+      - MDS (escalado multidimensional)
+      - Aprendizaje de variedades (manifold learning) {#manifold-learning}
+        - LLE y PCA local
+        - Isomap
+        - t-SNE
+        - UMAP
+        - Curvas principales
+    - Clustering
+      - Clustering basado en centroides
+        - k-means
+        - k-medoids y k-median
+        - Cuantización vectorial (VQ)
+      - Clustering jerárquico
+        - Dendrograma
+        - Criterios de enlace (linkage)
+      - Clustering basado en densidad
+        - DBSCAN
+        - Mean Shift
+      - Spectral clustering
+      - Modelos de mezcla gaussiana (GMM) {#gmm}
+      - Elección del número de clusters (método del codo) {#metodo-del-codo}
+      - Evaluación del clustering
+        - Coeficiente de silueta
+        - Índice de Calinski-Harabasz
+        - Índice de Davies-Bouldin
+    - Estimación de densidad
+      - Histograma
+      - Estimación kernel de densidad (KDE / ventanas de Parzen) {#kde}
+  - 6. Redes neuronales: cómo aprenden
+    - Neurona biológica y neurona artificial {#neurona-artificial}
+    - Perceptrón
+    - Perceptrón multicapa (MLP) {#mlp}
+    - Funciones de activación
+      - Sigmoide y tanh
+      - ReLU y variantes (Leaky ReLU, ELU)
+      - GELU
+      - Softmax
+    - Funciones de pérdida
+      - Pérdidas de regresión (MSE, MAE, Huber)
+      - Entropía cruzada (binaria y categórica)
+      - Pérdidas perceptuales
+    - Optimización
+      - Descenso por gradiente
+      - Retropropagación (backpropagation) {#backpropagation}
+      - Diferenciación automática
+      - Batch, mini-batch y SGD
+      - Época y tamaño de lote
+      - Tasa de aprendizaje (learning rate) {#learning-rate}
+      - Programación de la tasa de aprendizaje {#lr-schedulers}
+      - Momentum
+      - RMSprop y Adagrad
+      - Adam y AdamW
+      - Métodos de segundo orden (Newton)
+      - Inicialización de pesos
+      - Desvanecimiento y explosión del gradiente
+    - Regularización en redes
+      - Penalización L1 y L2 (weight decay)
+      - Dropout
+      - Early stopping
+      - Inyección de ruido
+    - Entrenamiento en la práctica
+      - Receta de entrenamiento
+      - Curvas de aprendizaje
+      - Callbacks
+      - Reproducibilidad y semillas
+    - Construcción de modelos
+      - API secuencial
+      - API funcional
+      - Capas y pérdidas personalizadas
+      - Redes siamesas (pesos compartidos)
+      - Modelos multi-entrada y multi-salida {#multi-entrada-salida}
+  - 7. Arquitecturas de redes neuronales
+    - Bloques comunes
+      - Conexión residual (skip connection)
+      - Capas de normalización (batch, layer, group)
+      - Capa de embedding
+    - Redes convolucionales (CNN) {#cnn}
+      - Convolución
+      - Filtros y mapas de características
+      - Padding y stride
+      - Pooling
+      - Campo receptivo
+      - Equivarianza e invarianza
+      - Convolución 1D
+      - Convolución separable
+      - Convolución transpuesta (upsampling)
+      - Inspiración biológica de las CNN
+    - Redes recurrentes (RNN) {#rnn}
+      - Estado oculto y memoria
+      - Retropropagación a través del tiempo (BPTT) {#bptt}
+      - LSTM
+      - GRU
+      - RNN bidireccional
+      - Echo State Networks (reservoir computing)
+      - RNN clásicas: Hopfield, Elman y Jordan
+      - Topologías de secuencia (one-to-many, many-to-one, many-to-many)
+    - Atención y Transformers
+      - Mecanismo de atención
+      - Query, Key y Value
+      - Atención por producto escalar escalado
+      - Autoatención (self-attention)
+      - Atención multicabeza
+      - Atención cruzada
+      - Máscara causal
+      - Codificación posicional
+      - Bloque Transformer
+      - Encoder, decoder y encoder-decoder {#tipos-de-transformer}
+      - Token [CLS]
+      - Transformers vs CNN y RNN
+    - Autoencoders
+      - Encoder, decoder y cuello de botella {#cuello-de-botella}
+      - Autoencoder undercomplete
+      - Autoencoder sparse
+      - Autoencoder denoising
+      - Autoencoder convolucional
+      - Autoencoder contractivo
+    - Modelos bioinspirados y multiescala
+      - Normalización divisiva generalizada (GDN) {#gdn}
+      - PerceptNet
+      - Modelos multiescala
+  - 8. Representaciones y modelos fundacionales
+    - Aprendizaje de representaciones
+    - Embeddings
+      - Espacio latente
+      - Aritmética de embeddings
+      - Búsqueda por similitud
+    - Aprendizaje autosupervisado (SSL)
+      - Tarea pretexto
+      - Aprendizaje contrastivo
+        - Pérdida InfoNCE
+        - SimCLR, MoCo, BYOL y DINO
+      - Modelado enmascarado (MAE, BEiT)
+      - Colapso de la representación
+      - Evaluación de representaciones (linear probing, k-NN)
+    - Aprendizaje por transferencia (transfer learning) {#transfer-learning}
+      - Modelo preentrenado como extractor de características {#extractor-de-caracteristicas}
+      - Ajuste fino (fine-tuning) {#fine-tuning}
+      - Congelar y descongelar capas
+      - Learning rates discriminativos
+      - Adaptación de dominio
+      - Olvido catastrófico
+      - Destilación de conocimiento
+    - Modelos fundacionales
+      - Qué es un modelo fundacional
+      - Leyes de escalado (scaling laws)
+  - 9. IA generativa
+    - Modelo generativo vs discriminativo
+    - Densidad explícita vs implícita
+    - Muestreo por transformada inversa
+    - Modelos autorregresivos
+      - Factorización por regla de la cadena {#regla-de-la-cadena-probabilidad}
+      - Generación con RNN
+      - PixelCNN
+      - Perplejidad
+    - Autoencoder variacional (VAE) {#vae}
+      - ELBO
+      - Truco de reparametrización
+    - Redes generativas adversarias (GAN) {#gan}
+      - Generador y discriminador (juego minimax)
+      - Colapso de modos (mode collapse)
+      - DCGAN
+      - Wasserstein GAN (WGAN)
+      - Otras variantes de GAN
+      - GAN condicional (cGAN)
+      - Pix2Pix
+      - CycleGAN
+      - SRGAN
+    - Flujos normalizantes (normalizing flows) {#normalizing-flows}
+      - Cambio de variable y jacobiano
+      - Flujos autorregresivos y de acoplamiento (MAF, RealNVP, Glow)
+      - Descuantización
+      - Gaussianización (RBIG) {#rbig}
+      - Flow Matching
+      - Rectified Flow (ReFlow)
+    - Modelos de difusión
+      - Proceso directo e inverso
+      - El denoiser como prior implícito
+      - DDPM
+      - DDIM
+      - Planificación del ruido (noise schedule)
+      - Guía por clasificador y classifier-free guidance {#guia-difusion}
+      - Difusión latente (Stable Diffusion) {#stable-diffusion}
+      - ControlNet
+      - DreamBooth
+      - Destilación de difusión (consistency models, SD Turbo)
+      - Difusión de vídeo
+    - Transferencia de estilo neuronal
+    - Superresolución, inpainting y colorización
+    - Datos sintéticos
+    - Evaluación de modelos generativos
+      - Evaluación cualitativa
+      - Inception Score (IS)
+      - FID y KID
+      - Mode drop y cobertura
+      - Verosimilitud vs calidad de muestras
+  - 10. Lenguaje y LLMs
+    - Procesamiento del lenguaje natural (NLP) {#nlp}
+      - Tareas de NLP
+      - Análisis de sentimiento
+      - Benchmarks de NLP (GLUE)
+    - Representación del texto
+      - Preprocesado de texto
+      - One-hot y bolsa de palabras {#bolsa-de-palabras}
+      - TF-IDF
+      - Tokenización
+        - Tokenización por subpalabras (BPE, WordPiece, SentencePiece)
+        - Vocabulario y tokens especiales
+      - Word embeddings
+        - Word2Vec (Skip-gram y CBOW)
+        - Negative sampling
+        - GloVe y Swivel
+      - Embeddings estáticos vs contextuales
+      - Modelos de embeddings de texto
+    - Modelos de lenguaje
+      - Modelo de lenguaje (predicción del siguiente token)
+      - Objetivos de preentrenamiento
+        - Modelado de lenguaje enmascarado (MLM) {#mlm}
+        - Modelado causal (CLM) {#clm}
+        - Corrupción de spans
+      - Encoder-only: BERT {#bert}
+      - Decoder-only: GPT {#gpt}
+      - Encoder-decoder: T5 {#t5}
+      - Gran modelo de lenguaje (LLM) {#llm}
+      - Preentrenamiento de LLMs
+      - Ventana de contexto
+      - Modelos de razonamiento (+)
+    - Adaptación de LLMs
+      - Fine-tuning supervisado (SFT) {#sft}
+      - Instruction tuning
+      - Fine-tuning multitarea
+      - PEFT (fine-tuning eficiente)
+        - LoRA
+        - QLoRA
+        - Prompt tuning
+        - Adapters
+      - RLHF
+        - Modelo de recompensa
+        - PPO
+        - Reward hacking
+        - RLAIF
+      - DPO (+)
+    - Inferencia y eficiencia
+      - Decodificación y temperatura
+      - Cuantización (GPTQ, AWQ, GGUF)
+      - LLMs locales vs API
+    - Uso de LLMs
+      - Prompt engineering
+      - Zero-shot, few-shot e in-context learning {#in-context-learning}
+      - Chain-of-thought
+      - Plantillas de chat y prompt de sistema {#plantillas-de-chat}
+      - Salida estructurada
+      - Alucinaciones
+    - Evaluación de LLMs
+      - Benchmarks y saturación
+      - LLM como juez (LLM-as-a-judge) {#llm-as-a-judge}
+      - Arenas de preferencia humana
+  - 11. RAG y agentes
+    - RAG (generación aumentada por recuperación)
+      - Memoria paramétrica vs no paramétrica
+      - Chunking
+      - Recuperación densa (dual encoder)
+      - Bases de datos vectoriales
+      - Búsqueda aproximada de vecinos (ANN)
+      - Búsqueda híbrida
+      - Re-ranking y Reciprocal Rank Fusion {#re-ranking}
+      - Reescritura de consultas
+      - Compresión y reordenación del contexto
+      - GraphRAG
+      - Agentic RAG
+      - Evaluación de RAG
+    - Agentes de IA
+      - Agente (LLM + herramientas + bucle) {#agente-llm}
+      - Llamada a herramientas (function calling) {#function-calling}
+      - Bucle ReAct
+      - Memoria del agente
+      - Guardrails y middleware
+      - Human-in-the-loop
+      - Agentes de código
+      - Sistemas multiagente
+      - Model Context Protocol (MCP) {#mcp}
+      - Evaluación de agentes
+      - Riesgos y permisos
+  - 12. Visión por computador
+    - Visión clásica
+      - Pirámides gaussiana y laplaciana
+      - Transformada de Fourier
+      - Wavelets
+    - Arquitecturas CNN de referencia
+      - ImageNet y AlexNet
+      - VGG
+      - GoogLeNet (Inception)
+      - ResNet
+      - DenseNet, ResNeXt y SENet
+      - MobileNet y EfficientNet
+      - ConvNeXt
+    - Vision Transformer (ViT) {#vit}
+    - Clasificación de imágenes
+    - Detección de objetos
+      - Cajas delimitadoras e IoU
+      - Detectores de dos fases (R-CNN)
+      - Detectores de una fase (YOLO, RetinaNet)
+      - Seguimiento de objetos (tracking)
+    - Segmentación
+      - Segmentación semántica y de instancias
+      - U-Net
+      - Segment Anything (SAM) {#sam}
+    - Estimación de pose y profundidad
+    - Calidad de imagen (IQA)
+      - Con referencia vs sin referencia
+      - PSNR y SSIM
+      - Métricas perceptuales (LPIPS, NLPD)
+    - Visión 3D y neural rendering
+      - NeRF
+      - Gaussian Splatting
+  - 13. IA multimodal y audio
+    - Aprendizaje multimodal
+    - Tareas multimodales (recuperación, captioning, VQA)
+    - Datasets multimodales
+    - Modelos contrastivos imagen-texto
+      - CLIP
+      - Clasificación zero-shot
+      - SigLIP
+    - Modelos de lenguaje multimodales (MLLM / VLM) {#mllm}
+      - Arquitectura: encoder, conector y LLM {#arquitectura-mllm}
+      - Entrenamiento de un MLLM {#entrenamiento-mllm}
+      - Modelos any-to-any
+    - Generación multimodal
+      - Texto a imagen
+      - Texto a vídeo e imagen a vídeo {#generacion-de-video}
+    - Audio y voz
+      - Espectrograma de Mel
+      - Reconocimiento de voz (Whisper)
+      - Síntesis de voz (TTS)
+      - CLAP (audio-texto)
+      - Generación de música
+  - 14. Series temporales
+    - Componentes de una serie (tendencia, estacionalidad)
+    - Estacionariedad (+)
+    - Autocorrelación
+    - Enventanado
+    - Predicción a uno y varios pasos {#prediccion-multipaso}
+    - Predicción autorregresiva
+    - Redes neuronales para series
+    - Modelos fundacionales de series (TimesFM, Chronos)
+    - Dynamic Time Warping (DTW) {#dtw}
+    - Series como imágenes (GAF, wavelets, espectrograma)
+  - 15. Sistemas de recomendación
+    - El problema de la recomendación
+    - Matriz de utilidad (usuario-ítem)
+    - Feedback explícito vs implícito
+    - Filtrado basado en contenido
+    - Filtrado colaborativo
+    - Factorización de matrices
+    - Sistemas híbridos
+    - Recomendación basada en sesión
+    - Arranque en frío (cold start) (+)
+    - Recomendación con deep learning
+      - AutoRec
+      - Neural Collaborative Filtering (GMF, NeuMF) {#ncf}
+      - Deep & Cross Network (DCN) {#dcn}
+    - Scoring y re-ranking
+    - Burbuja de filtro
+    - Evaluación de recomendadores
+      - Recall@K y HitRate@K
+      - Diversidad, novedad y serendipia
+  - 16. Detección de anomalías
+    - Anomalía, outlier, ruido y novedad
+    - Detección fuera de distribución (OOD) {#ood}
+    - Enfoques supervisado, semisupervisado y no supervisado {#enfoques-deteccion-anomalias}
+    - Detección basada en distancia
+    - Detección basada en probabilidad
+    - Detección basada en teoría de la información {#deteccion-teoria-informacion}
+    - Detección por reconstrucción o predicción
+    - Local Outlier Factor (LOF) {#lof}
+    - Isolation Forest
+    - Detección con modelos generativos
+    - Elección del umbral
+  - 17. IA fiable y responsable
+    - Explicabilidad (XAI) {#xai}
+      - Caja negra vs caja blanca
+      - Interpretabilidad vs explicabilidad
+      - Transparencia (simulable, descomponible, algorítmica)
+      - Taxonomía de métodos XAI
+      - Modelos interpretables por diseño
+        - Reglas de decisión (RIPPER)
+        - RuleFit
+        - Explainable Boosting Machine (EBM) {#ebm}
+      - Explicaciones locales
+        - Perfiles Ceteris Paribus
+        - ICE (Individual Conditional Expectation)
+        - LIME
+        - Anchors (reglas acotadas)
+        - Valores de Shapley
+        - SHAP
+        - Explicaciones contrafactuales
+        - Prototipos y excepciones
+      - Explicaciones globales
+        - PDP (dependencia parcial)
+        - ALE (efectos locales acumulados)
+        - Importancia por permutación
+        - Modelo subrogado global
+        - Análisis de interacciones
+      - Explicabilidad en deep learning
+        - Mapas de saliencia y Grad-CAM {#grad-cam}
+        - Visualización de filtros y activaciones
+        - Mapas de atención
+      - Evaluación de explicaciones
+    - Equidad (fairness)
+      - Sesgo algorítmico y atributos sensibles
+      - Métricas de equidad
+      - Mitigación del sesgo
+    - Robustez
+      - Ejemplos adversarios
+      - FGSM
+      - Ataque de un píxel
+      - Entrenamiento robusto
+    - Incertidumbre
+      - Incertidumbre aleatoria y epistémica (+)
+      - Propagación de la incertidumbre
+      - Estimación de incertidumbre en redes (+)
+    - Regulación y gobernanza
+      - Decisiones automatizadas y RGPD
+      - AI Act
+      - Estándares y gobernanza de la IA {#gobernanza-ia}
+      - Model cards
+  - 18. Aprendizaje por refuerzo
+    - Agente, entorno y recompensa
+    - Política y función de valor
+    - Exploración vs explotación
+    - Multi-armed bandits
+      - Greedy y ε-greedy {#epsilon-greedy}
+      - Valores iniciales optimistas
+      - UCB (Upper Confidence Bound)
+      - Muestreo de Thompson
+      - Bandits contextuales (LinUCB)
+    - Regret
