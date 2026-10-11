@@ -133,7 +133,7 @@ rel: entropia, elbo, destilacion-de-conocimiento, t-sne, rlhf
 en: Kullback-Leibler divergence
 
 ## informacion-mutua
-frase: Cuánta información comparten dos variables: detecta cualquier dependencia, no solo la lineal.
+frase: Cuánta información comparten dos variables: detecta cualquier dependencia, también la no lineal.
 desc: I(X;Y) mide cuánto se reduce la incertidumbre sobre una variable al conocer la otra. Vale cero solo si son independientes y, a diferencia de la correlación de Pearson, capta relaciones no lineales. Se usa para seleccionar variables, comparar agrupamientos y como objetivo en el aprendizaje de representaciones.
 cuando: Para medir o clasificar por importancia la relación entre variables cuando puede ser no lineal, por ejemplo al seleccionar variables.
 ej: Si y = x² con x simétrica en torno a cero, la correlación de Pearson es casi nula, pero la información mutua es alta.
@@ -255,7 +255,7 @@ rel: aprendizaje-de-estructura, algoritmo-pc, red-bayesiana, optimizacion
 en: hill climbing search
 
 ## regresion-lineal-bayesiana
-frase: Regresión lineal que da una distribución para los coeficientes y para cada predicción, no solo un valor.
+frase: Regresión lineal que da una distribución completa para los coeficientes y para cada predicción.
 desc: Pone una distribución a priori sobre los pesos y obtiene su posterior a partir de los datos. Cada predicción viene con su incertidumbre, que crece lejos de los datos de entrenamiento. El prior actúa como regularización: un prior gaussiano equivale a Ridge, y la fuerza de la regularización se puede estimar a partir de los propios datos.
 cuando: Con pocos datos o cuando necesitas un intervalo de incertidumbre en cada predicción de un modelo lineal.
 ej: Predecir la demanda de un producto recién lanzado con pocas semanas de historia, con un intervalo que se estrecha a medida que llegan datos.
@@ -274,7 +274,7 @@ rel: modelos-graficos-probabilisticos, rnn, gmm, componentes-de-una-serie
 en: hidden Markov model (HMM)
 
 ## causalidad
-frase: Saber qué variables provocan cambios en otras, no solo cuáles se mueven juntas.
+frase: Saber qué variables provocan cambios en otras, más allá de cuáles se mueven juntas.
 desc: Un modelo predictivo aprende asociaciones; una pregunta causal plantea qué pasaría si se interviniera sobre una variable. Responderla con datos observacionales exige supuestos explícitos, normalmente expresados como un grafo causal. Las pistas para construirlo son los experimentos aleatorizados, la dependencia condicional, el orden temporal y las asimetrías entre causa y efecto.
 cuando: Cuando la decisión implica intervenir (cambiar un precio, aplicar un tratamiento) y no basta con predecir.
 ej: Un modelo puede predecir bien las ventas a partir del gasto en publicidad, pero solo un análisis causal dice cuánto subirían si se duplicara ese gasto.

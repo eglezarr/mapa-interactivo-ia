@@ -58,7 +58,7 @@ rel: riesgo-de-bayes, sobreajuste, regularizacion, funciones-de-perdida
 en: empirical risk minimization (ERM)
 
 ## generalizacion
-frase: Acertar con datos nuevos, no solo con los que el modelo ya ha visto.
+frase: La capacidad de acertar con datos que el modelo no ha visto durante el entrenamiento.
 desc: Es el objetivo real del aprendizaje: que el modelo funcione con casos que no estaban en el entrenamiento. Se mide con datos reservados (validación y test) y depende del equilibrio entre la complejidad del modelo y la cantidad y calidad de los datos. La distancia entre el error de entrenamiento y el de test indica cuánto generaliza.
 ej: Un modelo de detección de fraude entrenado con operaciones de 2024 tiene que seguir funcionando con las de 2025.
 rel: sobreajuste, infraajuste, entrenamiento-validacion-y-test, validacion-cruzada
@@ -69,12 +69,14 @@ frase: El modelo memoriza el ruido del entrenamiento y falla con datos nuevos.
 desc: Ocurre cuando el modelo es demasiado flexible para los datos disponibles: aprende los patrones reales y también el ruido y las casualidades de la muestra. Se reconoce porque el error de entrenamiento sigue bajando mientras el de validación sube. Se combate con más datos, modelos más simples, regularización, early stopping o data augmentation.
 ej: Un árbol de decisión sin límite de profundidad acierta el 100 % de los casos de entrenamiento creando casi una hoja por ejemplo, pero falla con clientes nuevos.
 rel: infraajuste, compromiso-sesgo-varianza, regularizacion, curvas-de-aprendizaje
+en: overfitting
 
 ## infraajuste
 frase: El modelo es demasiado simple para captar los patrones de los datos.
 desc: El modelo no tiene capacidad suficiente, o no se ha entrenado lo bastante, para representar la relación real. Se nota porque el error es alto tanto en entrenamiento como en validación. Se corrige con modelos más flexibles, mejores variables, menos regularización o más tiempo de entrenamiento.
 ej: Ajustar una recta a la relación en forma de U entre temperatura y consumo eléctrico, que sube tanto con el frío como con el calor.
 rel: sobreajuste, compromiso-sesgo-varianza, feature-engineering
+en: underfitting
 
 ## compromiso-sesgo-varianza
 frase: Los modelos simples se equivocan de forma sistemática; los complejos, de forma inestable.
@@ -105,6 +107,7 @@ cuando: Con variables numéricas en una escala comparable y no demasiadas dimens
 ej: Dos clientes de 30 y 35 años que compran 2 y 4 veces al mes están a √(5² + 2²) ≈ 5,4 unidades; sin escalar las variables, la edad domina la distancia.
 rel: distancia-manhattan, escalado-de-variables, k-means, maldicion-de-la-dimensionalidad
 py: sklearn.metrics.pairwise.euclidean_distances ; scipy.spatial.distance.euclidean
+en: Euclidean distance (L2)
 
 ## distancia-manhattan
 frase: Suma lo que separa a dos puntos en cada eje, como recorrer calles en cuadrícula.
@@ -113,6 +116,7 @@ cuando: Con datos que tienen valores extremos o en dimensiones altas, donde suel
 ej: En una ciudad con calles en cuadrícula, ir 3 manzanas al este y 4 al norte supone recorrer 7 manzanas, aunque en línea recta haya 5.
 rel: distancia-euclidea, distancia-y-similitud, knn
 py: sklearn.metrics.pairwise.manhattan_distances ; scipy.spatial.distance.minkowski
+en: Manhattan distance (L1) & Lp norms
 
 ## similitud-coseno
 frase: Mide el ángulo entre dos vectores: si apuntan en la misma dirección, se parecen.
@@ -156,10 +160,11 @@ cuando: Cuando tienes muy pocas etiquetas y los datos forman grupos bien separad
 ej: Agrupar 10.000 fotos de productos en 50 grupos y etiquetar a mano solo 2 o 3 fotos de cada uno para clasificar todo el catálogo.
 rel: aprendizaje-semisupervisado, k-means, embeddings
 py: sklearn.cluster.KMeans
+en: cluster-then-label
 
 ## supervision-debil
 frase: Aprender con etiquetas imperfectas: ruidosas, incompletas o agregadas.
-desc: En muchos problemas reales no hay una etiqueta exacta por ejemplo, sino etiquetas con errores, conjuntos de etiquetas posibles o solo proporciones por grupo. La supervisión débil adapta las pérdidas y los modelos a esas situaciones, por ejemplo modelando la probabilidad de que una etiqueta esté mal (matriz de mezcla). También abarca generar etiquetas con reglas o heurísticas baratas y combinarlas.
+desc: En muchos problemas reales las etiquetas son imperfectas: contienen errores, son conjuntos de etiquetas posibles o se reducen a proporciones por grupo. La supervisión débil adapta las pérdidas y los modelos a esas situaciones, por ejemplo modelando la probabilidad de que una etiqueta esté mal (matriz de mezcla). También abarca generar etiquetas con reglas o heurísticas baratas y combinarlas.
 cuando: Cuando conseguir etiquetas exactas es inviable, pero tienes etiquetas aproximadas, reglas heurísticas o información agregada.
 ej: Etiquetar automáticamente reseñas como positivas si tienen 4 o 5 estrellas, sabiendo que parte de esas etiquetas será incorrecta.
 rel: etiquetas-ruidosas, etiquetas-parciales, proporciones-de-etiquetas, calidad-y-etiquetado-de-datos

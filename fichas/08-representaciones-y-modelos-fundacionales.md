@@ -50,7 +50,7 @@ en: self-supervised learning (SSL)
 
 ## tarea-pretexto
 frase: Una tarea artificial, con la respuesta conocida gratis, que obliga al modelo a aprender algo útil.
-desc: No interesa por sí misma, sino por lo que obliga a aprender. Ejemplos clásicos son predecir la rotación aplicada a una imagen, recomponer un puzle de parches, colorear una foto en blanco y negro o adivinar palabras ocultas. Si está bien elegida, resolverla exige entender la estructura de los datos, y esas representaciones sirven después para la tarea real.
+desc: Su resultado no importa por sí mismo: lo valioso es lo que obliga a aprender. Ejemplos clásicos son predecir la rotación aplicada a una imagen, recomponer un puzle de parches, colorear una foto en blanco y negro o adivinar palabras ocultas. Si está bien elegida, resolverla exige entender la estructura de los datos, y esas representaciones sirven después para la tarea real.
 ej: Para adivinar si una foto está girada 90°, el modelo necesita reconocer los objetos y saber cuál es su orientación natural.
 rel: aprendizaje-autosupervisado, modelado-enmascarado, aprendizaje-contrastivo
 en: pretext task

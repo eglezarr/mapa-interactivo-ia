@@ -23,6 +23,14 @@ python3 tools/web.py --estricto   # valida árbol y fichas y regenera public/ind
 git add -A && git commit -m "…" && git push   # Cloudflare Pages publica el cambio automáticamente
 ```
 
+Para añadir un área nueva: sus conceptos van en `esqueleto.md` y sus fichas en un fichero nuevo de `fichas/`.
+Si las fichas citan librerías nuevas, antes de publicar:
+
+```bash
+python3 tools/docs.py          # añade a datos/docs.json los enlaces a la documentación
+python3 tools/verificar_py.py  # comprueba que las rutas e hiperparámetros existen en las librerías
+```
+
 ## Publicación
 
 Cloudflare Pages conectado a este repositorio: rama `main`, sin comando de build, directorio de salida `public`.

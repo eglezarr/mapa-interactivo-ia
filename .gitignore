@@ -1,4 +1,4 @@
-# Generados al construir (se regeneran con tools/html.py)
+# Generados al construir (se regeneran con tools/web.py)
 datos/arbol.json
 datos/indice.tsv
 datos/mapa.json
