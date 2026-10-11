@@ -168,6 +168,14 @@ MANUAL.update(KERAS)
 MANUAL.update({
     "torch.nn.functional": "https://docs.pytorch.org/docs/stable/nn.functional.html",
     "lpips.LPIPS": "https://github.com/richzhang/PerceptualSimilarity",
+    "compressai.layers.GDN": "https://interdigitalinc.github.io/CompressAI/layers.html#compressai.layers.GDN",
+})
+for _c, _p in (("TransformerEncoder", "transformer_encoder"), ("TransformerDecoder", "transformer_decoder"),
+               ("SinePositionEncoding", "sine_position_encoding"), ("PositionEmbedding", "position_embedding"),
+               ("RotaryEmbedding", "rotary_embedding"), ("TokenAndPositionEmbedding", "token_and_position_embedding")):
+    MANUAL[f"keras_hub.layers.{_c}"] = f"https://keras.io/keras_hub/api/modeling_layers/{_p}/"
+PATRONES.update({
+    "reservoirpy": "https://reservoirpy.readthedocs.io/en/latest/api/generated/{ruta}.html",
 })
 
 
@@ -179,6 +187,14 @@ def url_para(ruta):
         return f"https://docs.pytorch.org/docs/stable/nn.init.html#{ruta}"
     if ruta.startswith("torch.utils.data."):
         return f"https://docs.pytorch.org/docs/stable/data.html#{ruta}"
+    partes = ruta.split(".")
+    if lib == "torch" and not ruta.startswith("torch.Tensor.") and len(partes) > 2 \
+            and partes[-2][:1].isupper() and partes[-1][:1].islower():   # método de una clase: ancla en su página
+        return f"https://docs.pytorch.org/docs/stable/generated/{'.'.join(partes[:-1])}.html#{ruta}"
+    if lib == "skimage":                              # una página por módulo
+        return f"https://scikit-image.org/docs/stable/api/{'.'.join(partes[:-1])}.html#{ruta}"
+    if ruta.startswith("transformers.Auto"):
+        return f"https://huggingface.co/docs/transformers/model_doc/auto#{ruta}"
     if lib in PATRONES:
         return PATRONES[lib].format(ruta=ruta)
     if lib == "mlflow":          # una página por módulo, con un ancla por función

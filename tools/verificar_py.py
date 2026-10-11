@@ -109,6 +109,8 @@ class Estatico:
                     for n in arbol.body:
                         if isinstance(n, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
                             defs[n.name] = n
+                        elif isinstance(n, ast.Assign) and len(n.targets) == 1 and isinstance(n.targets[0], ast.Name):
+                            defs.setdefault(n.targets[0].id, n)    # p. ej. funciones de C con docstring en PyTorch
                         elif isinstance(n, ast.ImportFrom):        # reexportaciones: from .estimators import X
                             base_mod = mod.split(".") if es_paquete else mod.split(".")[:-1]
                             if n.level:
@@ -136,8 +138,10 @@ class Estatico:
         if not resto:
             return None                                   # es un módulo
         # la definición puede estar en un submódulo y reexportarse en el paquete (torch.nn.Conv2d → torch.nn.modules.conv)
+        def rango(nodo):   # preferir definiciones reales a asignaciones, y estas a reexportaciones
+            return 2 if isinstance(nodo, tuple) else 1 if isinstance(nodo, ast.Assign) else 0
         cands = sorted((m for m in mods if (m == pref or m.startswith(pref + ".")) and resto[0] in mods[m]),
-                       key=lambda m: (isinstance(mods[m][resto[0]], tuple), m.count("."), m))
+                       key=lambda m: (rango(mods[m][resto[0]]), m.count("."), m))
         if not cands:
             raise AttributeError(f"{resto[0]} no está definido en {pref}")
         nodo = mods[cands[0]][resto[0]]
@@ -157,6 +161,17 @@ class Estatico:
     def parametros(nodo):
         if nodo is None:
             return None
+        if isinstance(nodo, ast.Assign):
+            # nombre = _add_docstr(c_func, "nombre(a, b=1, *, c=None) -> Tensor ...": la firma está en el docstring
+            nombre = nodo.targets[0].id
+            textos = [c.value for c in ast.walk(nodo.value) if isinstance(c, ast.Constant) and isinstance(c.value, str)]
+            firmas = [m.group(1) for t in textos for m in re.finditer(rf"{re.escape(nombre)}\(([^)]*)\)", t)]
+            if not firmas:
+                return None
+            firma = max(firmas, key=lambda f: f.count(","))     # la firma completa, no un ejemplo de uso
+            nombres = {p.split("=")[0].strip().lstrip("*") for p in firma.split(",")}
+            nombres.discard("")
+            return (nombres, "**" in firma)
         if isinstance(nodo, ast.ClassDef):
             init = next((n for n in nodo.body if isinstance(n, ast.FunctionDef) and n.name == "__init__"), None)
             if init is None:   # dataclass o configuración: campos anotados; los heredados no se ven → laxo
