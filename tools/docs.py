@@ -322,7 +322,33 @@ MANUAL.update({
 PATRONES.update({
     "librosa": "https://librosa.org/doc/latest/generated/{ruta}.html",
     "torchaudio": "https://docs.pytorch.org/audio/stable/generated/{ruta}.html",
+    "pyts": "https://pyts.readthedocs.io/en/stable/generated/{ruta}.html",
 })
+
+# Series, recomendación, anomalías y refuerzo
+MANUAL.update({
+    "keras.utils.timeseries_dataset_from_array":
+        "https://keras.io/api/data_loading/timeseries/#timeseriesdatasetfromarray-function",
+    "chronos.BaseChronosPipeline": "https://github.com/amazon-science/chronos-forecasting",
+    "chronos.Chronos2Pipeline": "https://github.com/amazon-science/chronos-forecasting",
+    "surprise.KNNBasic": "https://surprise.readthedocs.io/en/stable/knn_inspired.html",
+    "surprise.SVD": "https://surprise.readthedocs.io/en/stable/matrix_factorization.html",
+    "implicit.als.AlternatingLeastSquares": "https://github.com/benfred/implicit",
+    "lightfm.LightFM": "https://github.com/lyst/lightfm",
+    "keras_rs.layers.FeatureCross": "https://keras.io/keras_rs/api/feature_interaction_layers/feature_cross/",
+    "keras_rs.layers.BruteForceRetrieval": "https://keras.io/keras_rs/api/retrieval_layers/brute_force_retrieval/",
+    "keras_rs.metrics.NDCG": "https://keras.io/keras_rs/api/metrics/ndcg/",
+    "keras_rs.metrics.RecallAtK": "https://keras.io/keras_rs/api/metrics/",
+    "gymnasium.make": "https://gymnasium.farama.org/api/registry/#gymnasium.make",
+    "gymnasium.Env": "https://gymnasium.farama.org/api/env/",
+    "numpy.random.Generator.beta": "https://numpy.org/doc/stable/reference/random/generated/numpy.random.Generator.beta.html",
+})
+for _r in ("pyod.models.knn.KNN", "pyod.models.ecod.ECOD", "pyod.models.pca.PCA", "pyod.models.auto_encoder.AutoEncoder",
+           "pyod.models.iforest.IForest", "pyod.models.vae.VAE"):
+    MANUAL[_r] = "https://pyod.readthedocs.io/"
+for _r in ("mabwiser.mab.MAB", "mabwiser.mab.LearningPolicy.EpsilonGreedy", "mabwiser.mab.LearningPolicy.UCB1",
+           "mabwiser.mab.LearningPolicy.ThompsonSampling", "mabwiser.mab.LearningPolicy.LinUCB"):
+    MANUAL[_r] = "https://github.com/fidelity/mabwiser"
 
 
 def url_para(ruta):
@@ -343,6 +369,8 @@ def url_para(ruta):
         return f"https://huggingface.co/docs/transformers/model_doc/auto#{ruta}"
     if ruta.startswith("torchvision.models.") and partes[2][:1].islower():     # constructores de modelos
         return f"https://docs.pytorch.org/vision/stable/models/generated/{ruta}.html"
+    if lib == "tslearn":                              # una carpeta por submódulo
+        return f"https://tslearn.readthedocs.io/en/stable/gen_modules/{partes[1]}/{ruta}.html"
     if lib in PATRONES:
         return PATRONES[lib].format(ruta=ruta)
     if lib == "mlflow":          # una página por módulo, con un ancla por función

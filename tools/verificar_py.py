@@ -213,7 +213,8 @@ if __name__ == "__main__":
             continue
         validas = [f for _, f in firmas[n["id"]] if f]
         nombres = set().union(*[f[0] for f in validas]) if validas else set()
-        laxo = any(f[1] for f in validas) or not validas
+        sin_firma = any(f is None for _, f in firmas[n["id"]])     # p. ej. clases compiladas (STL de statsmodels)
+        laxo = any(f[1] for f in validas) or sin_firma
         for param, _ in n["hp"]:
             for p in [x.strip() for x in param.split("/")]:
                 if p in nombres:
