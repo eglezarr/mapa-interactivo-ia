@@ -3,7 +3,7 @@
   salida/mapa-ia.html   versión para la vista previa en Claude (sin <head>: el entorno añade el esqueleto)
   public/index.html     versión web autónoma (documento completo) que sirve Cloudflare Pages
   public/_headers       cabeceras HTTP de Cloudflare Pages (no indexar en buscadores, seguridad básica)
-Uso: python3 tools/html.py [--estricto]
+Uso: python3 tools/web.py [--estricto]
 """
 import json
 import sys

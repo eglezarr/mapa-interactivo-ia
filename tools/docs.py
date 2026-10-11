@@ -21,6 +21,24 @@ MANUAL = {
     "pygam.LinearGAM": "https://github.com/dswah/pyGAM",
     "interpret.glassbox.ExplainableBoostingClassifier": "https://interpret.ml/docs/ebm.html",
     "interpret.glassbox.ExplainableBoostingRegressor": "https://interpret.ml/docs/ebm.html",
+    "scipy.stats": "https://docs.scipy.org/doc/scipy/reference/stats.html",
+    "keras.losses.KLDivergence": "https://keras.io/api/losses/probabilistic_losses/#kldivergence-class",
+    "pgmpy.models.DiscreteBayesianNetwork":
+        "https://pgmpy.org/api/generated/models/pgmpy.models.DiscreteBayesianNetwork.html",
+    "pgmpy.inference.VariableElimination":
+        "https://pgmpy.org/api/generated/inference/pgmpy.inference.VariableElimination.html",
+    "pgmpy.causal_discovery.PC":
+        "https://pgmpy.org/api/generated/structure_learning/pgmpy.causal_discovery.PC.html",
+    "pgmpy.causal_discovery.HillClimbSearch":
+        "https://pgmpy.org/api/generated/structure_learning/pgmpy.causal_discovery.HillClimbSearch.html",
+    "causallearn.search.ConstraintBased.PC.pc": "https://causal-learn.readthedocs.io/en/latest/search_methods_index/"
+        "Constraint-based%20causal%20discovery%20methods/PC.html",
+    "causallearn.search.ScoreBased.GES.ges": "https://causal-learn.readthedocs.io/en/latest/search_methods_index/"
+        "Score-based%20causal%20discovery%20methods/GES.html",
+    "causallearn.search.FCMBased.lingam.DirectLiNGAM": "https://causal-learn.readthedocs.io/en/latest/search_methods_index/"
+        "Causal%20discovery%20methods%20based%20on%20constrained%20functional%20causal%20models/lingam.html",
+    "causallearn.search.FCMBased.ANM.ANM.ANM": "https://causal-learn.readthedocs.io/en/latest/search_methods_index/"
+        "Causal%20discovery%20methods%20based%20on%20constrained%20functional%20causal%20models/anm.html",
 }
 
 
@@ -47,6 +65,9 @@ PATRONES = {
     "numpy": "https://numpy.org/doc/stable/reference/generated/{ruta}.html",
     "pandas": "https://pandas.pydata.org/docs/reference/api/{ruta}.html",
     "imblearn": "https://imbalanced-learn.org/stable/references/generated/{ruta}.html",
+    "hmmlearn": "https://hmmlearn.readthedocs.io/en/latest/api.html#{ruta}",
+    "hyppo": "https://hyppo.neurodata.io/api/generated/{ruta}.html",
+    "pingouin": "https://pingouin-stats.org/build/html/generated/{ruta}.html",
 }
 
 
