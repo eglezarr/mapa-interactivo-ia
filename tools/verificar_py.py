@@ -44,16 +44,31 @@ def rutas(mapa):
 
 
 def resolver(ruta):
+    """Resuelve la ruta como lo haría `from paquete import Nombre`: primero el atributo, luego el submódulo.
+    (Así pgmpy.causal_discovery.PC es la clase PC y no el submódulo PC.py que la define)."""
     partes = ruta.split(".")
-    for i in range(len(partes), 0, -1):
+    try:
+        obj = importlib.import_module(partes[0])
+    except Exception as e:  # noqa: BLE001
+        raise ImportError(f"no se pudo importar {partes[0]}: {e}") from e
+    for i, attr in enumerate(partes[1:], start=1):
+        sub = ".".join(partes[:i + 1])
         try:
-            obj = importlib.import_module(".".join(partes[:i]))
-        except Exception:
-            continue
-        for attr in partes[i:]:
-            obj = getattr(obj, attr)          # AttributeError si no existe
-        return obj
-    raise ImportError(f"no se pudo importar ningún prefijo de {ruta}")
+            obj = getattr(obj, attr)
+        except AttributeError:
+            try:
+                obj = importlib.import_module(sub)
+            except ModuleNotFoundError as e:
+                if e.name and (sub == e.name or sub.startswith(e.name + ".")):
+                    raise AttributeError(f"{attr} no existe en {'.'.join(partes[:i])}") from e
+                raise ImportError(f"falta la dependencia {e.name}") from e   # p. ej. torch
+            except Exception as e:  # noqa: BLE001
+                raise ImportError(f"error al importar {sub}: {e}") from e
+        except Exception as e:  # noqa: BLE001  (módulos perezosos que fallan al cargar un submódulo)
+            raise ImportError(f"error al cargar {sub}: {e}") from e
+        if getattr(obj, "_backends", None):       # objeto de relleno de transformers/diffusers sin PyTorch
+            raise ImportError(f"{sub} necesita {obj._backends}")
+    return obj
 
 
 def parametros(obj):
@@ -84,18 +99,32 @@ class Estatico:
                     continue
                 for f in base.rglob("*.py"):
                     partes = f.relative_to(raiz).with_suffix("").parts
-                    mod = ".".join(partes[:-1] if partes[-1] == "__init__" else partes)
+                    es_paquete = partes[-1] == "__init__"
+                    mod = ".".join(partes[:-1] if es_paquete else partes)
                     try:
                         arbol = ast.parse(f.read_text(encoding="utf-8", errors="ignore"))
                     except SyntaxError:
                         continue
-                    mods[mod] = {n.name: n for n in arbol.body
-                                 if isinstance(n, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))}
+                    defs = {}
+                    for n in arbol.body:
+                        if isinstance(n, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+                            defs[n.name] = n
+                        elif isinstance(n, ast.ImportFrom):        # reexportaciones: from .estimators import X
+                            base_mod = mod.split(".") if es_paquete else mod.split(".")[:-1]
+                            if n.level:
+                                base_mod = base_mod[:len(base_mod) - (n.level - 1)]
+                                origen = ".".join(base_mod + ([n.module] if n.module else []))
+                            else:
+                                origen = n.module or ""
+                            for a in n.names:
+                                if a.name != "*":
+                                    defs.setdefault(a.asname or a.name, ("importa", origen, a.name))
+                    mods[mod] = defs
                 break
             self.cache[paquete] = mods
         return self.cache[paquete]
 
-    def buscar(self, ruta):
+    def buscar(self, ruta, _profundidad=0):
         partes = ruta.split(".")
         mods = self._modulos(partes[0])
         if not mods:
@@ -108,10 +137,15 @@ class Estatico:
             return None                                   # es un módulo
         # la definición puede estar en un submódulo y reexportarse en el paquete (torch.nn.Conv2d → torch.nn.modules.conv)
         cands = sorted((m for m in mods if (m == pref or m.startswith(pref + ".")) and resto[0] in mods[m]),
-                       key=lambda m: (m.count("."), m))
+                       key=lambda m: (isinstance(mods[m][resto[0]], tuple), m.count("."), m))
         if not cands:
             raise AttributeError(f"{resto[0]} no está definido en {pref}")
         nodo = mods[cands[0]][resto[0]]
+        if isinstance(nodo, tuple):                        # solo hay una reexportación: seguirla
+            if _profundidad > 5:
+                raise AttributeError(f"demasiadas reexportaciones para {ruta}")
+            _, origen, nombre = nodo
+            return self.buscar(".".join([origen, nombre] + resto[1:]), _profundidad + 1)
         for attr in resto[1:]:
             sub = [n for n in getattr(nodo, "body", []) if getattr(n, "name", None) == attr]
             if not sub:

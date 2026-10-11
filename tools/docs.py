@@ -68,7 +68,78 @@ PATRONES = {
     "hmmlearn": "https://hmmlearn.readthedocs.io/en/latest/api.html#{ruta}",
     "hyppo": "https://hyppo.neurodata.io/api/generated/{ruta}.html",
     "pingouin": "https://pingouin-stats.org/build/html/generated/{ruta}.html",
+    "seaborn": "https://seaborn.pydata.org/generated/{ruta}.html",
+    "jax": "https://docs.jax.dev/en/latest/_autosummary/{ruta}.html",
+    "joblib": "https://joblib.readthedocs.io/en/stable/generated/{ruta}.html",
+    "torchvision": "https://docs.pytorch.org/vision/stable/generated/{ruta}.html",
 }
+
+# Páginas de documentación sueltas, comprobadas una a una
+MANUAL.update({
+    "wandb.init": "https://docs.wandb.ai/ref/python/functions/init",
+    "transformers.pipeline": "https://huggingface.co/docs/transformers/main_classes/pipelines#transformers.pipeline",
+    "huggingface_hub.hf_hub_download":
+        "https://huggingface.co/docs/huggingface_hub/package_reference/file_download#huggingface_hub.hf_hub_download",
+    "datasets.load_dataset": "https://huggingface.co/docs/datasets/package_reference/loading_methods#datasets.load_dataset",
+    "onnxruntime.InferenceSession": "https://onnxruntime.ai/docs/api/python/api_summary.html#onnxruntime.InferenceSession",
+    "cleanlab.filter.find_label_issues":
+        "https://docs.cleanlab.ai/stable/cleanlab/filter.html#cleanlab.filter.find_label_issues",
+    "flaml.AutoML": "https://microsoft.github.io/FLAML/docs/reference/automl/automl/",
+    "autokeras.ImageClassifier": "https://autokeras.com/image_classifier/",
+    "autosklearn.classification.AutoSklearnClassifier":
+        "https://automl.github.io/auto-sklearn/master/api.html#autosklearn.classification.AutoSklearnClassifier",
+    "fastapi.FastAPI": "https://fastapi.tiangolo.com/reference/fastapi/",
+})
+
+
+# keras.io organiza las páginas por categorías (tomado de los índices de keras.io/api)
+KERAS_CAPAS = {
+    "core_layers": "Input:input Dense:dense EinsumDense:einsum_dense Activation:activation Embedding:embedding "
+                   "Masking:masking Lambda:lambda Identity:identity",
+    "convolution_layers": "Conv1D:convolution1d Conv2D:convolution2d Conv3D:convolution3d "
+                          "SeparableConv1D:separable_convolution1d SeparableConv2D:separable_convolution2d "
+                          "DepthwiseConv1D:depthwise_convolution1d DepthwiseConv2D:depthwise_convolution2d "
+                          "Conv1DTranspose:convolution1d_transpose Conv2DTranspose:convolution2d_transpose "
+                          "Conv3DTranspose:convolution3d_transpose",
+    "pooling_layers": "MaxPooling1D:max_pooling1d MaxPooling2D:max_pooling2d MaxPooling3D:max_pooling3d "
+                      "AveragePooling1D:average_pooling1d AveragePooling2D:average_pooling2d "
+                      "GlobalMaxPooling1D:global_max_pooling1d GlobalMaxPooling2D:global_max_pooling2d "
+                      "GlobalAveragePooling1D:global_average_pooling1d GlobalAveragePooling2D:global_average_pooling2d",
+    "recurrent_layers": "LSTM:lstm GRU:gru SimpleRNN:simple_rnn TimeDistributed:time_distributed "
+                        "Bidirectional:bidirectional ConvLSTM2D:conv_lstm2d RNN:rnn",
+    "normalization_layers": "BatchNormalization:batch_normalization LayerNormalization:layer_normalization "
+                            "UnitNormalization:unit_normalization GroupNormalization:group_normalization "
+                            "RMSNormalization:rms_normalization",
+    "regularization_layers": "Dropout:dropout SpatialDropout1D:spatial_dropout1d SpatialDropout2D:spatial_dropout2d "
+                             "GaussianDropout:gaussian_dropout AlphaDropout:alpha_dropout GaussianNoise:gaussian_noise "
+                             "ActivityRegularization:activity_regularization",
+    "attention_layers": "GroupQueryAttention:group_query_attention MultiHeadAttention:multi_head_attention "
+                        "Attention:attention AdditiveAttention:additive_attention",
+    "reshaping_layers": "Reshape:reshape Flatten:flatten RepeatVector:repeat_vector Permute:permute "
+                        "Cropping2D:cropping2d UpSampling1D:up_sampling1d UpSampling2D:up_sampling2d "
+                        "ZeroPadding1D:zero_padding1d ZeroPadding2D:zero_padding2d",
+    "merging_layers": "Concatenate:concatenate Average:average Maximum:maximum Minimum:minimum Add:add "
+                      "Subtract:subtract Multiply:multiply Dot:dot",
+    "activation_layers": "ReLU:relu Softmax:softmax LeakyReLU:leaky_relu PReLU:prelu ELU:elu",
+    "preprocessing_layers/image_augmentation": "RandomFlip:random_flip RandomRotation:random_rotation "
+                                               "RandomZoom:random_zoom RandomCrop:random_crop RandomContrast:random_contrast",
+    "preprocessing_layers/numerical": "Normalization:normalization",
+    "preprocessing_layers/text": "TextVectorization:text_vectorization",
+}
+KERAS = {f"keras.layers.{c}": f"https://keras.io/api/layers/{cat}/{p}/"
+         for cat, pares in KERAS_CAPAS.items() for c, p in (x.split(":") for x in pares.split())}
+KERAS.update({f"keras.optimizers.{c}": f"https://keras.io/api/optimizers/{p}/" for c, p in (
+    x.split(":") for x in "SGD:sgd RMSprop:rmsprop Adam:adam AdamW:adamw Adagrad:adagrad Adadelta:adadelta "
+                          "Nadam:Nadam Lion:lion Muon:muon".split())})
+KERAS.update({f"keras.callbacks.{c}": f"https://keras.io/api/callbacks/{p}/" for c, p in (
+    x.split(":") for x in "ModelCheckpoint:model_checkpoint TensorBoard:tensorboard EarlyStopping:early_stopping "
+                          "LearningRateScheduler:learning_rate_scheduler ReduceLROnPlateau:reduce_lr_on_plateau "
+                          "CSVLogger:csv_logger LambdaCallback:lambda_callback Callback:base_callback".split())})
+for _c in "MeanSquaredError MeanAbsoluteError Huber LogCosh".split():
+    KERAS[f"keras.losses.{_c}"] = f"https://keras.io/api/losses/regression_losses/#{_c.lower()}-class"
+for _c in "BinaryCrossentropy BinaryFocalCrossentropy CategoricalCrossentropy SparseCategoricalCrossentropy Poisson KLDivergence".split():
+    KERAS[f"keras.losses.{_c}"] = f"https://keras.io/api/losses/probabilistic_losses/#{_c.lower()}-class"
+MANUAL.update(KERAS)
 
 
 def url_para(ruta):
@@ -77,6 +148,8 @@ def url_para(ruta):
     lib = ruta.split(".")[0]
     if lib in PATRONES:
         return PATRONES[lib].format(ruta=ruta)
+    if lib == "mlflow":          # una página por módulo, con un ancla por función
+        return f"https://mlflow.org/docs/latest/api_reference/python_api/{ruta.rsplit('.', 1)[0]}.html#{ruta}"
     if lib == "optuna":
         sub = "samplers/" if ruta.startswith("optuna.samplers.") else ""
         return f"https://optuna.readthedocs.io/en/stable/reference/{sub}generated/{ruta}.html"
