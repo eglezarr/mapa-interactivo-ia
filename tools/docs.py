@@ -350,16 +350,60 @@ for _r in ("mabwiser.mab.MAB", "mabwiser.mab.LearningPolicy.EpsilonGreedy", "mab
            "mabwiser.mab.LearningPolicy.ThompsonSampling", "mabwiser.mab.LearningPolicy.LinUCB"):
     MANUAL[_r] = "https://github.com/fidelity/mabwiser"
 
+# IA fiable y responsable
+PATRONES.update({
+    "shap": "https://shap.readthedocs.io/en/latest/generated/{ruta}.html",
+    "lime": "https://lime-ml.readthedocs.io/en/stable/lime.html#{ruta}",
+    "fairlearn": "https://fairlearn.org/main/api_reference/generated/{ruta}.html",
+    "mapie": "https://mapie.readthedocs.io/en/stable/generated/{ruta}.html",
+})
+SELDON = "https://docs.seldon.ai/alibi-explain"
+MANUAL.update({
+    "wittgenstein.RIPPER": "https://github.com/imoscovitz/wittgenstein",
+    "imodels.RuleFitClassifier": "https://github.com/csinva/imodels",
+    "imodels.RuleFitRegressor": "https://github.com/csinva/imodels",
+    "dalex.Explainer": "https://dalex.drwhy.ai/python/api/#dalex.Explainer",
+    "dalex.Explainer.predict_profile": "https://dalex.drwhy.ai/python/api/#dalex.Explainer",
+    "alibi.explainers.AnchorTabular": f"{SELDON}/explanations/methods/anchors",
+    "alibi.explainers.AnchorTabular.explain": f"{SELDON}/explanations/methods/anchors",
+    "alibi.explainers.ALE": f"{SELDON}/explanations/methods/ale",
+    "alibi.explainers.ALE.explain": f"{SELDON}/explanations/methods/ale",
+    "alibi.prototypes.ProtoSelect": f"{SELDON}/api-reference/prototypes/protoselect",
+    "dice_ml.Dice": "https://interpret.ml/DiCE/dice_ml.html#dice_ml.Dice",
+    "dice_ml.Dice.generate_counterfactuals": "https://interpret.ml/DiCE/dice_ml.explainer_interfaces.html"
+        "#dice_ml.explainer_interfaces.explainer_base.ExplainerBase.generate_counterfactuals",
+    "pytorch_grad_cam.GradCAM": "https://github.com/jacobgil/pytorch-grad-cam",
+    "captum.attr": "https://captum.ai/api/",
+    "captum.attr.Saliency": "https://captum.ai/api/saliency.html",
+    "captum.attr.IntegratedGradients": "https://captum.ai/api/integrated_gradients.html",
+    "bertviz.head_view": "https://github.com/jessevig/bertviz",
+    "quantus.FaithfulnessCorrelation": "https://quantus.readthedocs.io/en/stable/docs_api/"
+        "quantus.metrics.faithfulness.faithfulness_correlation.html",
+    "quantus.MaxSensitivity": "https://quantus.readthedocs.io/en/stable/docs_api/"
+        "quantus.metrics.robustness.max_sensitivity.html",
+    "uncertainties.ufloat": "https://uncertainties.readthedocs.io/en/latest/user_guide.html"
+        "#creating-variables-numbers-with-uncertainties",
+    "huggingface_hub.ModelCard": f"{HF}/huggingface_hub/package_reference/cards#huggingface_hub.ModelCard",
+    "huggingface_hub.ModelCardData": f"{HF}/huggingface_hub/package_reference/cards#huggingface_hub.ModelCardData",
+})
+
 
 def url_para(ruta):
     if ruta in MANUAL:
         return MANUAL[ruta]
     lib = ruta.split(".")[0]
+    partes = ruta.split(".")
+    es_metodo = len(partes) > 2 and partes[-2][:1].isupper() and partes[-1][:1].islower()
+    if lib in ("shap", "sklearn") and es_metodo:        # método de una clase: ancla en la página de la clase
+        base = {"shap": "https://shap.readthedocs.io/en/latest/generated",
+                "sklearn": "https://scikit-learn.org/stable/modules/generated"}[lib]
+        return f"{base}/{'.'.join(partes[:-1])}.html#{ruta}"
+    if lib == "art":                                  # una página por submódulo: art.attacks.evasion → attacks/evasion
+        return f"https://adversarial-robustness-toolbox.readthedocs.io/en/latest/modules/{'/'.join(partes[1:-1])}.html#{ruta}"
     if ruta.startswith("torch.nn.init."):            # una sola página con un ancla por función
         return f"https://docs.pytorch.org/docs/stable/nn.init.html#{ruta}"
     if ruta.startswith("torch.utils.data."):
         return f"https://docs.pytorch.org/docs/stable/data.html#{ruta}"
-    partes = ruta.split(".")
     if lib == "torch" and not ruta.startswith("torch.Tensor.") and len(partes) > 2 \
             and partes[-2][:1].isupper() and partes[-1][:1].islower():   # método de una clase: ancla en su página
         return f"https://docs.pytorch.org/docs/stable/generated/{'.'.join(partes[:-1])}.html#{ruta}"
