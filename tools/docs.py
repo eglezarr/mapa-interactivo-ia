@@ -298,6 +298,32 @@ for _c in ("Faithfulness", "ContextRecall", "ContextPrecision", "AnswerRelevancy
            "AgentGoalAccuracyWithReference"):
     MANUAL[f"ragas.metrics.collections.{_c}"] = "https://docs.ragas.io/"
 
+# Visión, multimodal y audio
+for _c, _p in (("InceptionV3", "inceptionv3/"), ("DenseNet121", "densenet/#densenet121-function"),
+               ("MobileNetV2", "mobilenet/#mobilenetv2-function"), ("EfficientNetB0", "efficientnet/#efficientnetb0-function"),
+               ("ConvNeXtTiny", "convnext/#convnexttiny-function")):
+    MANUAL[f"keras.applications.{_c}"] = f"https://keras.io/api/applications/{_p}"
+for _c, _p in (("SamModel", "sam"), ("SiglipModel", "siglip"), ("LlavaForConditionalGeneration", "llava"),
+               ("WhisperForConditionalGeneration", "whisper"), ("VitsModel", "vits"), ("ClapModel", "clap"),
+               ("MusicgenForConditionalGeneration", "musicgen"), ("ViTForImageClassification", "vit"),
+               ("CLIPModel", "clip"), ("CLIPProcessor", "clip")):
+    MANUAL[f"transformers.{_c}"] = f"{HF}/transformers/model_doc/{_p}#transformers.{_c}"
+for _c, _p in (("LTXPipeline", "pipelines/ltx_video"), ("CogVideoXImageToVideoPipeline", "pipelines/cogvideox")):
+    MANUAL[f"diffusers.{_c}"] = f"{DIFFUSERS}/{_p}#diffusers.{_c}"
+MANUAL.update({
+    "pywt.wavedec2": "https://pywavelets.readthedocs.io/en/latest/ref/2d-dwt-and-idwt.html",
+    "pywt.dwt2": "https://pywavelets.readthedocs.io/en/latest/ref/2d-dwt-and-idwt.html",
+    "ultralytics.YOLO": "https://docs.ultralytics.com/usage/python",
+    "supervision.ByteTrack": "https://supervision.roboflow.com/trackers/",
+    "segment_anything.SamPredictor": "https://github.com/facebookresearch/segment-anything",
+    "segmentation_models_pytorch.Unet": "https://github.com/qubvel-org/segmentation_models.pytorch",
+    "open_clip.create_model_and_transforms": "https://github.com/mlfoundations/open_clip",
+})
+PATRONES.update({
+    "librosa": "https://librosa.org/doc/latest/generated/{ruta}.html",
+    "torchaudio": "https://docs.pytorch.org/audio/stable/generated/{ruta}.html",
+})
+
 
 def url_para(ruta):
     if ruta in MANUAL:
