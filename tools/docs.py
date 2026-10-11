@@ -143,13 +143,42 @@ for _c in "MeanSquaredError MeanAbsoluteError Huber LogCosh".split():
     KERAS[f"keras.losses.{_c}"] = f"https://keras.io/api/losses/regression_losses/#{_c.lower()}-class"
 for _c in "BinaryCrossentropy BinaryFocalCrossentropy CategoricalCrossentropy SparseCategoricalCrossentropy Poisson KLDivergence".split():
     KERAS[f"keras.losses.{_c}"] = f"https://keras.io/api/losses/probabilistic_losses/#{_c.lower()}-class"
+for _f in "relu sigmoid tanh gelu softmax leaky_relu elu silu".split():
+    KERAS[f"keras.activations.{_f}"] = f"https://keras.io/api/layers/activations/#{_f.replace('_', '')}-function"
+for _c in "HeNormal HeUniform GlorotNormal GlorotUniform".split():
+    KERAS[f"keras.initializers.{_c}"] = f"https://keras.io/api/layers/initializers/#{_c.lower()}-class"
+for _c in "L1 L2 L1L2".split():
+    KERAS[f"keras.regularizers.{_c}"] = f"https://keras.io/api/layers/regularizers/#{_c.lower()}-class"
+for _c, _p in (("ExponentialDecay", "exponential_decay"), ("CosineDecay", "cosine_decay"),
+               ("CosineDecayRestarts", "cosine_decay_restarts"), ("PiecewiseConstantDecay", "piecewise_constant_decay")):
+    KERAS[f"keras.optimizers.schedules.{_c}"] = f"https://keras.io/api/optimizers/learning_rate_schedules/{_p}/"
+KERAS.update({
+    "keras.losses": "https://keras.io/api/losses/",
+    "keras.losses.Loss": "https://keras.io/api/losses/#loss-class",
+    "keras.Model": "https://keras.io/api/models/model/",
+    "keras.Input": "https://keras.io/api/layers/core_layers/input/",
+    "keras.Model.fit": "https://keras.io/api/models/model_training_apis/#fit-method",
+    "keras.Model.compile": "https://keras.io/api/models/model_training_apis/#compile-method",
+    "keras.layers.Layer": "https://keras.io/api/layers/base_layer/#layer-class",
+    "keras.utils.set_random_seed": "https://keras.io/api/utils/python_utils/#setrandomseed-function",
+    "keras.applications.VGG19": "https://keras.io/api/applications/vgg/",
+    "keras.applications.VGG16": "https://keras.io/api/applications/vgg/",
+})
 MANUAL.update(KERAS)
+MANUAL.update({
+    "torch.nn.functional": "https://docs.pytorch.org/docs/stable/nn.functional.html",
+    "lpips.LPIPS": "https://github.com/richzhang/PerceptualSimilarity",
+})
 
 
 def url_para(ruta):
     if ruta in MANUAL:
         return MANUAL[ruta]
     lib = ruta.split(".")[0]
+    if ruta.startswith("torch.nn.init."):            # una sola página con un ancla por función
+        return f"https://docs.pytorch.org/docs/stable/nn.init.html#{ruta}"
+    if ruta.startswith("torch.utils.data."):
+        return f"https://docs.pytorch.org/docs/stable/data.html#{ruta}"
     if lib in PATRONES:
         return PATRONES[lib].format(ruta=ruta)
     if lib == "mlflow":          # una página por módulo, con un ancla por función
