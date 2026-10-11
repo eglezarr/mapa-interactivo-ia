@@ -37,10 +37,28 @@ def resolver(ruta):
     raise ImportError(ruta)
 
 
+# Librerías cuya página de documentación se deduce de la ruta sin importar nada
+# (cada patrón comprobado con al menos una página real)
+PATRONES = {
+    "xgboost": "https://xgboost.readthedocs.io/en/stable/python/python_api.html#{ruta}",
+    "lightgbm": "https://lightgbm.readthedocs.io/en/stable/pythonapi/{ruta}.html",
+    "torch": "https://docs.pytorch.org/docs/stable/generated/{ruta}.html",
+    "scipy": "https://docs.scipy.org/doc/scipy/reference/generated/{ruta}.html",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/{ruta}.html",
+    "pandas": "https://pandas.pydata.org/docs/reference/api/{ruta}.html",
+    "imblearn": "https://imbalanced-learn.org/stable/references/generated/{ruta}.html",
+}
+
+
 def url_para(ruta):
     if ruta in MANUAL:
         return MANUAL[ruta]
     lib = ruta.split(".")[0]
+    if lib in PATRONES:
+        return PATRONES[lib].format(ruta=ruta)
+    if lib == "optuna":
+        sub = "samplers/" if ruta.startswith("optuna.samplers.") else ""
+        return f"https://optuna.readthedocs.io/en/stable/reference/{sub}generated/{ruta}.html"
     obj = resolver(ruta)
     if lib == "sklearn":
         if inspect.ismodule(obj):
@@ -51,12 +69,6 @@ def url_para(ruta):
             return f"https://www.statsmodels.org/stable/generated/{ruta}.html"
         canon = f"{obj.__module__}.{obj.__qualname__}"          # p. ej. statsmodels.api.OLS → ...linear_model.OLS
         return f"https://www.statsmodels.org/stable/generated/{canon}.html"
-    if lib == "xgboost":
-        return f"https://xgboost.readthedocs.io/en/stable/python/python_api.html#{ruta}"
-    if lib == "lightgbm":
-        return f"https://lightgbm.readthedocs.io/en/stable/pythonapi/{ruta}.html"
-    if lib == "torch":
-        return f"https://docs.pytorch.org/docs/stable/generated/{ruta}.html"
     return None
 
 
