@@ -79,7 +79,8 @@ def parametros(obj):
         return None
     nombres = {p.name for p in sig.parameters.values() if p.kind not in (p.VAR_KEYWORD, p.VAR_POSITIONAL)}
     hay_kwargs = any(p.kind == p.VAR_KEYWORD for p in sig.parameters.values())
-    return (nombres, hay_kwargs)
+    solo_args = not nombres and any(p.kind == p.VAR_POSITIONAL for p in sig.parameters.values())  # p. ej. clases SWIG de faiss
+    return (nombres, hay_kwargs or solo_args)
 
 
 class Estatico:

@@ -239,6 +239,65 @@ for _r in ("nflows.flows.base.Flow", "nflows.transforms.autoregressive.MaskedAff
 for _r in ("faiss.IndexFlatIP", "faiss.IndexFlatL2", "faiss.IndexHNSWFlat", "faiss.IndexIVFFlat", "faiss.IndexIVFPQ"):
     MANUAL[_r] = "https://github.com/facebookresearch/faiss/wiki/Faiss-indexes"
 
+# Hugging Face: transformers, trl, peft, tokenizers, smolagents (una página por tema, ancla por clase)
+HF = "https://huggingface.co/docs"
+for _c, _p in (("DataCollatorForLanguageModeling", "main_classes/data_collator"),
+               ("GenerationConfig", "main_classes/text_generation"),
+               ("BitsAndBytesConfig", "main_classes/quantization"), ("GPTQConfig", "main_classes/quantization"),
+               ("AwqConfig", "main_classes/quantization"), ("BertModel", "model_doc/bert"),
+               ("GPT2LMHeadModel", "model_doc/gpt2"), ("T5ForConditionalGeneration", "model_doc/t5")):
+    MANUAL[f"transformers.{_c}"] = f"{HF}/transformers/{_p}#transformers.{_c}"
+for _c, _p in (("SFTTrainer", "sft_trainer"), ("SFTConfig", "sft_trainer"), ("DPOTrainer", "dpo_trainer"),
+               ("DPOConfig", "dpo_trainer"), ("RewardTrainer", "reward_trainer"), ("RewardConfig", "reward_trainer"),
+               ("GRPOTrainer", "grpo_trainer"), ("GRPOConfig", "grpo_trainer")):
+    MANUAL[f"trl.{_c}"] = f"{HF}/trl/{_p}#trl.{_c}"
+for _c, _p in (("LoraConfig", "lora"), ("get_peft_model", "peft_model"),
+               ("prepare_model_for_kbit_training", "peft_model"), ("PromptTuningConfig", "prompt_tuning")):
+    MANUAL[f"peft.{_c}"] = f"{HF}/peft/package_reference/{_p}#peft.{_c}"
+MANUAL.update({
+    "tokenizers.models.BPE": f"{HF}/tokenizers/api/models#tokenizers.models.BPE",
+    "tokenizers.trainers.BpeTrainer": f"{HF}/tokenizers/api/trainers#tokenizers.trainers.BpeTrainer",
+    "tokenizers.Tokenizer": f"{HF}/tokenizers/api/tokenizer#tokenizers.Tokenizer",
+    "smolagents.CodeAgent": f"{HF}/smolagents/reference/agents#smolagents.CodeAgent",
+    "smolagents.ToolCallingAgent": f"{HF}/smolagents/reference/agents#smolagents.ToolCallingAgent",
+    "smolagents.tool": f"{HF}/smolagents/reference/tools#smolagents.tool",
+    "tiktoken.get_encoding": "https://github.com/openai/tiktoken",
+    "sentencepiece.SentencePieceProcessor": "https://github.com/google/sentencepiece",
+    "nltk.tokenize.word_tokenize": "https://www.nltk.org/api/nltk.tokenize.word_tokenize.html",
+    "nltk.stem.SnowballStemmer": "https://www.nltk.org/api/nltk.stem.snowball.html#nltk.stem.snowball.SnowballStemmer",
+    "gensim.models.FastText": "https://radimrehurek.com/gensim/models/fasttext.html#gensim.models.fasttext.FastText",
+    "gensim.downloader.load": "https://radimrehurek.com/gensim/downloader.html#gensim.downloader.load",
+    "adapters.SeqBnConfig": "https://github.com/adapter-hub/adapters",
+    "stable_baselines3.PPO": "https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html",
+    "openai.OpenAI": "https://github.com/openai/openai-python",
+    "pydantic.BaseModel": "https://docs.pydantic.dev/latest/api/base_model/",
+    "mcp.server.mcpserver.MCPServer": "https://py.sdk.modelcontextprotocol.io/v2/",
+    "chromadb.PersistentClient": "https://docs.trychroma.com/reference/python/client",
+    "rank_bm25.BM25Okapi": "https://github.com/dorianbrown/rank_bm25",
+})
+# LangChain y LangGraph: URLs tomadas de resultados de búsqueda de su documentación oficial
+LC_DOCS, LC_REF = "https://docs.langchain.com/oss", "https://reference.langchain.com/python"
+MANUAL.update({
+    "langchain.agents.create_agent": f"{LC_DOCS}/langchain/agents",
+    "langchain_core.tools.tool": f"{LC_REF}/langchain-core/tools",
+    "langchain_text_splitters.RecursiveCharacterTextSplitter":
+        f"{LC_DOCS}/python/integrations/splitters/recursive_text_splitter",
+    "langchain_core.vectorstores.InMemoryVectorStore":
+        f"{LC_REF}/langchain-core/vectorstores/in_memory/InMemoryVectorStore",
+    "langgraph.graph.StateGraph": f"{LC_DOCS}/python/langgraph/graph-api",
+    "langgraph.checkpoint.memory.InMemorySaver": f"{LC_REF}/langgraph.checkpoint/memory/InMemorySaver",
+    "langgraph.types.interrupt": f"{LC_REF}/langgraph/types/interrupt",
+    "langchain_classic.retrievers.EnsembleRetriever": f"{LC_REF}/langchain-classic/retrievers/ensemble",
+    "langchain_classic.retrievers.MultiQueryRetriever": f"{LC_REF}/langchain_classic/retrievers/multi_query/",
+    "langchain_community.document_transformers.LongContextReorder": "https://github.com/langchain-ai/langchain-community",
+})
+for _c in ("HumanInTheLoopMiddleware", "PIIMiddleware", "SummarizationMiddleware", "ModelCallLimitMiddleware",
+           "ToolCallLimitMiddleware"):
+    MANUAL[f"langchain.agents.middleware.{_c}"] = f"{LC_DOCS}/python/langchain/middleware/overview"
+for _c in ("Faithfulness", "ContextRecall", "ContextPrecision", "AnswerRelevancy", "ToolCallAccuracy",
+           "AgentGoalAccuracyWithReference"):
+    MANUAL[f"ragas.metrics.collections.{_c}"] = "https://docs.ragas.io/"
+
 
 def url_para(ruta):
     if ruta in MANUAL:
