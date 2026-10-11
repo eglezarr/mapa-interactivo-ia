@@ -89,6 +89,10 @@ MANUAL.update({
     "autosklearn.classification.AutoSklearnClassifier":
         "https://automl.github.io/auto-sklearn/master/api.html#autosklearn.classification.AutoSklearnClassifier",
     "fastapi.FastAPI": "https://fastapi.tiangolo.com/reference/fastapi/",
+    "umap.UMAP": "https://umap-learn.readthedocs.io/en/latest/api.html#umap.umap_.UMAP",
+    "sklearn_extra.cluster.KMedoids":
+        "https://scikit-learn-extra.readthedocs.io/en/stable/generated/sklearn_extra.cluster.KMedoids.html",
+    "kmedoids.KMedoids": "https://python-kmedoids.readthedocs.io/en/latest/#kmedoids.KMedoids",
 })
 
 
