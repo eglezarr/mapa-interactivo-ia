@@ -177,6 +177,67 @@ for _c, _p in (("TransformerEncoder", "transformer_encoder"), ("TransformerDecod
 PATRONES.update({
     "reservoirpy": "https://reservoirpy.readthedocs.io/en/latest/api/generated/{ruta}.html",
 })
+KERAS_APPS = {"ResNet50": "resnet/resnet_models/#resnet50-function", "VGG16": "vgg/vgg_models/#vgg16-function",
+              "VGG19": "vgg/vgg_models/#vgg19-function"}
+MANUAL.update({f"keras.applications.{c}": f"https://keras.io/api/applications/{p}" for c, p in KERAS_APPS.items()})
+
+SBERT = "https://sbert.net/docs/package_reference"
+DIFFUSERS = "https://huggingface.co/docs/diffusers/api"
+TORCHMETRICS = "https://lightning.ai/docs/torchmetrics/stable/image"
+MANUAL.update({
+    "sentence_transformers.SentenceTransformer": f"{SBERT}/sentence_transformer/model.html",
+    "sentence_transformers.CrossEncoder": f"{SBERT}/cross_encoder/model.html",
+    "sentence_transformers.util.semantic_search":
+        f"{SBERT}/util/retrieval.html#sentence_transformers.util.retrieval.semantic_search",
+    "sentence_transformers.sentence_transformer.losses.MultipleNegativesRankingLoss":
+        f"{SBERT}/sentence_transformer/losses.html#multiplenegativesrankingloss",
+    "gensim.models.KeyedVectors.most_similar": "https://radimrehurek.com/gensim/models/keyedvectors.html"
+                                               "#gensim.models.keyedvectors.KeyedVectors.most_similar",
+    "gensim.models.Word2Vec": "https://radimrehurek.com/gensim/models/word2vec.html#gensim.models.word2vec.Word2Vec",
+    "lightly.loss.NTXentLoss":
+        "https://docs.lightly.ai/self-supervised-learning/lightly.loss.html#lightly.loss.ntx_ent_loss.NTXentLoss",
+    "timm.create_model": "https://huggingface.co/docs/timm/reference/models#timm.create_model",
+    "transformers.Trainer": "https://huggingface.co/docs/transformers/main_classes/trainer#transformers.Trainer",
+    "transformers.TrainingArguments":
+        "https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments",
+    "transformers.ViTMAEConfig": "https://huggingface.co/docs/transformers/model_doc/vit_mae#transformers.ViTMAEConfig",
+    "transformers.ViTMAEForPreTraining":
+        "https://huggingface.co/docs/transformers/model_doc/vit_mae#transformers.ViTMAEForPreTraining",
+    "numpy.random.Generator.uniform":
+        "https://numpy.org/doc/stable/reference/random/generated/numpy.random.Generator.uniform.html",
+    "torch.distributions.Normal": "https://docs.pytorch.org/docs/stable/distributions.html#torch.distributions.normal.Normal",
+    "torch.distributions.Normal.rsample":
+        "https://docs.pytorch.org/docs/stable/distributions.html#torch.distributions.normal.Normal.rsample",
+    "torch.distributions.kl_divergence":
+        "https://docs.pytorch.org/docs/stable/distributions.html#torch.distributions.kl.kl_divergence",
+    "torch.distributions.TransformedDistribution": "https://docs.pytorch.org/docs/stable/distributions.html"
+                                                   "#torch.distributions.transformed_distribution.TransformedDistribution",
+    "sdv.single_table.GaussianCopulaSynthesizer":
+        "https://docs.sdv.dev/sdv/single-table-data/modeling/synthesizers/gaussiancopulasynthesizer",
+    "sdv.single_table.CTGANSynthesizer": "https://docs.sdv.dev/sdv/single-table-data/modeling/synthesizers/ctgansynthesizer",
+    "prdc.compute_prdc": "https://github.com/clovaai/generative-evaluation-prdc",
+    "torchmetrics.image.inception.InceptionScore": f"{TORCHMETRICS}/inception_score.html",
+    "torchmetrics.image.fid.FrechetInceptionDistance": f"{TORCHMETRICS}/frechet_inception_distance.html",
+    "torchmetrics.image.kid.KernelInceptionDistance": f"{TORCHMETRICS}/kernel_inception_distance.html",
+})
+for _c, _p in (("DiffusionPipeline", "pipelines/overview"), ("DDPMPipeline", "pipelines/ddpm"),
+               ("StableDiffusionPipeline", "pipelines/stable_diffusion/text2img"),
+               ("StableDiffusion3Pipeline", "pipelines/stable_diffusion/stable_diffusion_3"),
+               ("StableDiffusionInpaintPipeline", "pipelines/stable_diffusion/inpaint"),
+               ("StableDiffusionUpscalePipeline", "pipelines/stable_diffusion/upscale"),
+               ("StableDiffusionControlNetPipeline", "pipelines/controlnet"),
+               ("AutoPipelineForText2Image", "pipelines/auto_pipeline"), ("CogVideoXPipeline", "pipelines/cogvideox"),
+               ("WanPipeline", "pipelines/wan"), ("FluxPipeline", "pipelines/flux"),
+               ("UNet2DModel", "models/unet2d"), ("AutoencoderKL", "models/autoencoderkl"),
+               ("ControlNetModel", "models/controlnet"), ("DDPMScheduler", "schedulers/ddpm"),
+               ("DDIMScheduler", "schedulers/ddim"), ("LCMScheduler", "schedulers/lcm"),
+               ("FlowMatchEulerDiscreteScheduler", "schedulers/flow_match_euler_discrete")):
+    MANUAL[f"diffusers.{_c}"] = f"{DIFFUSERS}/{_p}#diffusers.{_c}"
+for _r in ("nflows.flows.base.Flow", "nflows.transforms.autoregressive.MaskedAffineAutoregressiveTransform",
+           "nflows.transforms.coupling.AffineCouplingTransform"):
+    MANUAL[_r] = "https://github.com/bayesiains/nflows"
+for _r in ("faiss.IndexFlatIP", "faiss.IndexFlatL2", "faiss.IndexHNSWFlat", "faiss.IndexIVFFlat", "faiss.IndexIVFPQ"):
+    MANUAL[_r] = "https://github.com/facebookresearch/faiss/wiki/Faiss-indexes"
 
 
 def url_para(ruta):
@@ -195,6 +256,8 @@ def url_para(ruta):
         return f"https://scikit-image.org/docs/stable/api/{'.'.join(partes[:-1])}.html#{ruta}"
     if ruta.startswith("transformers.Auto"):
         return f"https://huggingface.co/docs/transformers/model_doc/auto#{ruta}"
+    if ruta.startswith("torchvision.models.") and partes[2][:1].islower():     # constructores de modelos
+        return f"https://docs.pytorch.org/vision/stable/models/generated/{ruta}.html"
     if lib in PATRONES:
         return PATRONES[lib].format(ruta=ruta)
     if lib == "mlflow":          # una página por módulo, con un ancla por función
